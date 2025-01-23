@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Car } from '../classes/Car';
+import { Road } from '../classes/Road';
+import { Obstacle } from '../classes/Obstacle';
 
 /**
  * Props for the Canvas component.
@@ -34,12 +36,33 @@ const Canvas: React.FC<CanvasProps> = ({ car }) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return; // Exit if the 2D context is not available
 
+    // Define the road
+    const road = new Road(200, 3, [
+        { x: 100, y: 100 },
+        { x: 400, y: 100 },
+        { x: 700, y: 300 },
+        { x: 1000, y: 300 },
+    ]);
+  
+    // Define obstacles
+    const obstacles = [
+        new Obstacle(300, 100, 20, 20), // Traffic cone
+        new Obstacle(600, 300, 30, 50), // Other car
+    ];
+  
+
     /**
      * Draws the car and updates its position on the canvas.
      */
     const draw = () => {
       // Clear the canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw the road
+      road.draw(ctx);
+
+      // Draw obstacles
+      obstacles.forEach((obstacle) => obstacle.draw(ctx));
 
       // Draw the car
       ctx.save(); // Save the current canvas state

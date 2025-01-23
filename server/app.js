@@ -1,8 +1,9 @@
 const express = require("express");
 
 const app = express();
-app.get('/data', (req, res) => {
-  res.json({ message: 'Hello from the server!' });
+
+app.get('/', (req, res) => {
+    res.send('Self-Driving Car Simulation Server');
 });
 
 module.exports = app;
