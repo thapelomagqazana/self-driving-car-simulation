@@ -1,0 +1,66 @@
+import React, { useEffect, useRef } from 'react';
+import { Car } from '../classes/Car';
+
+/**
+ * Props for the Canvas component.
+ */
+interface CanvasProps {
+  /**
+   * The car instance to be rendered on the canvas.
+   */
+  car: Car;
+}
+
+/**
+ * A React component that renders the 2D self-driving car simulation on a canvas.
+ * 
+ * This component takes a `Car` instance as a prop and renders it on the canvas.
+ * It uses the `requestAnimationFrame` function to create a smooth animation loop.
+ */
+const Canvas: React.FC<CanvasProps> = ({ car }) => {
+  // Reference to the canvas element
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  /**
+   * useEffect hook to set up the animation loop.
+   * 
+   * This hook runs when the component mounts and sets up the animation loop using `requestAnimationFrame`.
+   * It clears the canvas, draws the car, and updates the car's position on each frame.
+   */
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return; // Exit if the canvas element is not available
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return; // Exit if the 2D context is not available
+
+    /**
+     * Draws the car and updates its position on the canvas.
+     */
+    const draw = () => {
+      // Clear the canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw the car
+      ctx.save(); // Save the current canvas state
+      ctx.translate(car.x, car.y); // Move the origin to the car's position
+      ctx.rotate(car.angle); // Rotate the canvas to match the car's orientation
+      ctx.fillStyle = 'blue'; // Set the car's color
+      ctx.fillRect(-15, -10, 30, 20); // Draw a rectangle for the car
+      ctx.restore(); // Restore the canvas state
+
+      // Update the car's position
+      car.update();
+
+      // Request the next frame
+      requestAnimationFrame(draw);
+    };
+
+    // Start the animation loop
+    draw();
+  }, [car]); // Re-run the effect if the car instance changes
+
+  return <canvas ref={canvasRef} width={800} height={600} />;
+};
+
+export default Canvas;
