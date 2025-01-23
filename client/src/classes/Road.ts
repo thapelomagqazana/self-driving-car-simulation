@@ -18,6 +18,11 @@ export class Road {
     public points: { x: number; y: number }[];
   
     /**
+     * The boundaries of the road.
+     */
+    public borders: { x: number; y: number }[][];
+  
+    /**
      * Creates a new Road instance.
      * @param width - The width of the road.
      * @param laneCount - The number of lanes on the road.
@@ -27,6 +32,39 @@ export class Road {
       this.width = width;
       this.laneCount = laneCount;
       this.points = points;
+      this.borders = this.calculateBorders();
+    }
+  
+    /**
+     * Calculates the road boundaries based on the centerline and width.
+     * @returns An array of line segments representing the road boundaries.
+     */
+    private calculateBorders(): { x: number; y: number }[][] {
+      const borders: { x: number; y: number }[][] = [];
+  
+      for (let i = 0; i < this.points.length - 1; i++) {
+        const start = this.points[i];
+        const end = this.points[i + 1];
+  
+        // Calculate the angle of the road segment
+        const angle = Math.atan2(end.y - start.y, end.x - start.x);
+  
+        // Calculate the perpendicular offsets for the boundaries
+        const offsetX = Math.sin(angle) * (this.width / 2);
+        const offsetY = Math.cos(angle) * (this.width / 2);
+  
+        // Define the left and right boundaries
+        const leftStart = { x: start.x - offsetX, y: start.y + offsetY };
+        const leftEnd = { x: end.x - offsetX, y: end.y + offsetY };
+        const rightStart = { x: start.x + offsetX, y: start.y - offsetY };
+        const rightEnd = { x: end.x + offsetX, y: end.y - offsetY };
+  
+        // Add the boundary segments to the borders array
+        borders.push([leftStart, leftEnd]);
+        borders.push([rightStart, rightEnd]);
+      }
+  
+      return borders;
     }
   
     /**
@@ -39,31 +77,11 @@ export class Road {
       ctx.lineWidth = 5;
   
       // Draw the road boundaries
-      this.points.forEach((point, index) => {
-        if (index < this.points.length - 1) {
-          const nextPoint = this.points[index + 1];
-  
-          // Draw the centerline
-          ctx.beginPath();
-          ctx.moveTo(point.x, point.y);
-          ctx.lineTo(nextPoint.x, nextPoint.y);
-          ctx.stroke();
-  
-          // Draw the lane boundaries
-          const angle = Math.atan2(nextPoint.y - point.y, nextPoint.x - point.x);
-          const offsetX = Math.sin(angle) * (this.width / 2);
-          const offsetY = Math.cos(angle) * (this.width / 2);
-  
-          ctx.beginPath();
-          ctx.moveTo(point.x - offsetX, point.y + offsetY);
-          ctx.lineTo(nextPoint.x - offsetX, nextPoint.y + offsetY);
-          ctx.stroke();
-  
-          ctx.beginPath();
-          ctx.moveTo(point.x + offsetX, point.y - offsetY);
-          ctx.lineTo(nextPoint.x + offsetX, nextPoint.y - offsetY);
-          ctx.stroke();
-        }
+      this.borders.forEach((border) => {
+        ctx.beginPath();
+        ctx.moveTo(border[0].x, border[0].y);
+        ctx.lineTo(border[1].x, border[1].y);
+        ctx.stroke();
       });
   
       ctx.restore();

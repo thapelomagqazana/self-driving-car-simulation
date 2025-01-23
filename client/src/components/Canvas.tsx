@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Car } from '../classes/Car';
 import { Road } from '../classes/Road';
 import { Obstacle } from '../classes/Obstacle';
+import { Sensor } from '../classes/Sensor';
 
 /**
  * Props for the Canvas component.
@@ -49,7 +50,9 @@ const Canvas: React.FC<CanvasProps> = ({ car }) => {
         new Obstacle(300, 100, 20, 20), // Traffic cone
         new Obstacle(600, 300, 30, 50), // Other car
     ];
-  
+
+    // Define the sensor
+    const sensor = new Sensor(car);
 
     /**
      * Draws the car and updates its position on the canvas.
@@ -64,6 +67,10 @@ const Canvas: React.FC<CanvasProps> = ({ car }) => {
       // Draw obstacles
       obstacles.forEach((obstacle) => obstacle.draw(ctx));
 
+      // Update and draw the sensor
+      sensor.update(road.borders, obstacles);
+      sensor.draw(ctx);
+
       // Draw the car
       ctx.save(); // Save the current canvas state
       ctx.translate(car.x, car.y); // Move the origin to the car's position
@@ -74,6 +81,11 @@ const Canvas: React.FC<CanvasProps> = ({ car }) => {
 
       // Update the car's position
       car.update();
+
+      // Check for collisions
+      if (car.checkCollision(road.borders, obstacles)) {
+        car.reset(); // Reset the car if a collision is detected
+      }
 
       // Request the next frame
       requestAnimationFrame(draw);
