@@ -17,78 +17,84 @@ const Canvas: React.FC<CanvasProps> = ({ width, height }) => {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
+  
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
+  
     const road = new Road(width / 2, width * 0.8); // Centered road
     const car = new Car(road.getLaneCenter(1), height - 100); // Car starts in the middle lane
     const sensor = new Sensor(car);
-
+  
     // Add obstacles
     const obstacles = [
       new Obstacle(road.getLaneCenter(0) - 20, canvas.height / 2 - 50, 40, 40),
       new Obstacle(road.getLaneCenter(2) - 20, canvas.height / 3, 40, 40),
     ];
-
+  
     roadRef.current = road;
     carRef.current = car;
-
-    // Key state management
+  
     const keys = {
       ArrowUp: false,
       ArrowDown: false,
       ArrowLeft: false,
       ArrowRight: false,
     };
-
+  
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key in keys) keys[e.key as keyof typeof keys] = true;
     };
-
+  
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key in keys) keys[e.key as keyof typeof keys] = false;
     };
-
+  
     document.addEventListener("keydown", handleKeyDown);
     document.addEventListener("keyup", handleKeyUp);
-
-    // Animation loop
+  
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
-
-      // Draw road and car
+  
+      // Update road scroll
+      road.updateScroll(car.speed);
+  
+      // Draw road
       road.draw(ctx);
-
+  
       // Draw obstacles
       for (const obstacle of obstacles) {
         obstacle.draw(ctx);
       }
-
+  
       // Update and draw car
-      car.update(keys.ArrowUp, keys.ArrowDown, keys.ArrowLeft, keys.ArrowRight, road, obstacles);
+      car.update(
+        keys.ArrowUp,
+        keys.ArrowDown,
+        keys.ArrowLeft,
+        keys.ArrowRight,
+        road,
+        obstacles
+      );
       car.draw(ctx);
-
+  
       // Update and draw sensor
       sensor.update(road);
-
-      // Extract sensor readings logic to reduce nesting
-      sensor.readings = sensor.rays.map((ray) => getClosestIntersection(ray, obstacles));
-
-      // Draw the sensor
+      sensor.readings = sensor.rays.map((ray) =>
+        getClosestIntersection(ray, obstacles)
+      );
       sensor.draw(ctx);
-
-      requestAnimationFrame(animate); // Continue animation loop
+  
+      requestAnimationFrame(animate);
     };
-
+  
     animate();
-
+  
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("keyup", handleKeyUp);
     };
   }, [width, height]);
-
+  
   return (
     <canvas
       ref={canvasRef}
