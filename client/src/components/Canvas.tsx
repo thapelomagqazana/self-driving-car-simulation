@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { Car } from "../classes/Car";
 import { Road } from "../classes/Road";
+import { Sensor } from "../classes/Sensor";
 
 interface CanvasProps {
   width: number;
@@ -21,6 +22,7 @@ const Canvas: React.FC<CanvasProps> = ({ width, height }) => {
 
     const road = new Road(width / 2, width * 0.8); // Centered road
     const car = new Car(road.getLaneCenter(1), height - 100); // Car starts in the middle lane
+    const sensor = new Sensor(car);
     roadRef.current = road;
     carRef.current = car;
 
@@ -51,6 +53,8 @@ const Canvas: React.FC<CanvasProps> = ({ width, height }) => {
       road.draw(ctx);
       car.update(keys.ArrowUp, keys.ArrowDown, keys.ArrowLeft, keys.ArrowRight);
       car.draw(ctx);
+      sensor.update(road);
+      sensor.draw(ctx);
 
       requestAnimationFrame(animate); // Continue animation loop
     };

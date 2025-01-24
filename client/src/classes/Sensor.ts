@@ -1,206 +1,144 @@
+import { Road } from "./Road";
 import { Car } from "./Car";
-import { Obstacle } from "./Obstacle";
 
 /**
- * Represents a sensor that emits rays to detect obstacles and road boundaries.
+ * Simulates sensors (LIDAR-like) for detecting obstacles and boundaries.
  */
 export class Sensor {
-    /**
-     * The car to which the sensor is attached.
-     */
-    public car: Car;
-  
-    /**
-     * The number of rays emitted by the sensor.
-     */
-    public rayCount: number;
-  
-    /**
-     * The spread angle of the rays (in radians).
-     */
-    public raySpread: number;
-  
-    /**
-     * The length of the rays.
-     */
-    public rayLength: number;
-  
-    /**
-     * The rays emitted by the sensor.
-     */
-    public rays: { start: { x: number; y: number }; end: { x: number; y: number } }[];
-  
-    /**
-     * The detected intersections of the rays with the environment.
-     * Each reading can be either a point `{ x: number; y: number }` or `null` if no intersection is found.
-     */
-    public readings: ({ x: number; y: number } | null)[];
-  
-    /**
-     * Creates a new Sensor instance.
-     * @param car - The car to which the sensor is attached.
-     * @param rayCount - The number of rays emitted by the sensor.
-     * @param raySpread - The spread angle of the rays (in radians).
-     * @param rayLength - The length of the rays.
-     */
-    constructor(car: Car, rayCount: number = 5, raySpread: number = Math.PI / 2, rayLength: number = 200) {
-      this.car = car;
-      this.rayCount = rayCount;
-      this.raySpread = raySpread;
-      this.rayLength = rayLength;
-      this.rays = [];
-      this.readings = [];
-    }
-  
-    /**
-     * Updates the sensor's rays and detects intersections with the environment.
-     * @param roadBorders - The boundaries of the road.
-     * @param obstacles - The obstacles on the road.
-     */
-    public update(roadBorders: { x: number; y: number }[][], obstacles: Obstacle[]): void {
-      this.castRays();
-      this.readings = [];
-      for (let i = 0; i < this.rays.length; i++) {
-        const reading = this.getReading(this.rays[i], roadBorders, obstacles);
-        this.readings.push(reading); // Now `reading` can be `null`
-      }
-    }
-  
-    /**
-     * Emits rays from the car's position.
-     */
-    private castRays(): void {
-      this.rays = [];
-      for (let i = 0; i < this.rayCount; i++) {
-        const rayAngle =
-          lerp(this.raySpread / 2, -this.raySpread / 2, this.rayCount === 1 ? 0.5 : i / (this.rayCount - 1)) +
-          this.car.angle;
-  
-        const start = { x: this.car.x, y: this.car.y };
-        const end = {
-          x: this.car.x - Math.sin(rayAngle) * this.rayLength,
-          y: this.car.y - Math.cos(rayAngle) * this.rayLength,
-        };
-  
-        this.rays.push({ start, end });
-      }
-    }
-  
-    /**
-     * Detects the closest intersection of a ray with the environment.
-     * @param ray - The ray to check for intersections.
-     * @param roadBorders - The boundaries of the road.
-     * @param obstacles - The obstacles on the road.
-     * @returns The closest intersection point, or null if no intersection is found.
-     */
-    private getReading(
-      ray: { start: { x: number; y: number }; end: { x: number; y: number } },
-      roadBorders: { x: number; y: number }[][],
-      obstacles: Obstacle[]
-    ): { x: number; y: number } | null {
-      let closestIntersection: { x: number; y: number } | null = null;
-      let closestDistance = Infinity;
-  
-      // Check intersections with road borders
-      for (const border of roadBorders) {
-        const intersection = getIntersection(ray.start, ray.end, border[0], border[1]);
-        if (intersection && intersection.distance < closestDistance) {
-          closestDistance = intersection.distance;
-          closestIntersection = intersection.point;
-        }
-      }
-  
-      // Check intersections with obstacles
-      for (const obstacle of obstacles) {
-        const corners = [
-          { x: obstacle.x - obstacle.width / 2, y: obstacle.y - obstacle.height / 2 },
-          { x: obstacle.x + obstacle.width / 2, y: obstacle.y - obstacle.height / 2 },
-          { x: obstacle.x + obstacle.width / 2, y: obstacle.y + obstacle.height / 2 },
-          { x: obstacle.x - obstacle.width / 2, y: obstacle.y + obstacle.height / 2 },
-        ];
-  
-        for (let i = 0; i < corners.length; i++) {
-          const intersection = getIntersection(ray.start, ray.end, corners[i], corners[(i + 1) % corners.length]);
-          if (intersection && intersection.distance < closestDistance) {
-            closestDistance = intersection.distance;
-            closestIntersection = intersection.point;
-          }
-        }
-      }
-  
-      return closestIntersection;
-    }
-  
-   /**
-   * Draws the sensor rays and their intersections on the canvas.
-   * @param ctx - The canvas rendering context.
+  car: Car; // Reference to the car
+  rayCount: number; // Number of sensor rays
+  rayLength: number; // Maximum length of each ray
+  raySpread: number; // Angle spread of the rays in radians
+  rays: { start: { x: number; y: number }; end: { x: number; y: number } }[]; // Ray segments
+  readings: ({ x: number; y: number } | null)[]; // Detected intersection points
+
+  constructor(car: Car, rayCount: number = 5, rayLength: number = 150, raySpread: number = Math.PI / 4) {
+    this.car = car;
+    this.rayCount = rayCount;
+    this.rayLength = rayLength;
+    this.raySpread = raySpread;
+    this.rays = [];
+    this.readings = [];
+  }
+
+  /**
+   * Updates the rays based on the car's position and angle.
+   * Also calculates intersections with road boundaries.
+   * @param {Road} road - The road object for detecting boundaries.
    */
-    public draw(ctx: CanvasRenderingContext2D): void {
-        for (let i = 0; i < this.rayCount; i++) {
-        const ray = this.rays[i];
-        const reading = this.readings[i];
+  update(road: Road) {
+    this.#castRays();
+    this.readings = this.rays.map((ray) => this.#getIntersection(ray, road));
+  }
 
-        // Draw the ray
-        ctx.beginPath();
-        ctx.moveTo(ray.start.x, ray.start.y);
-        ctx.lineTo(ray.end.x, ray.end.y);
-        ctx.strokeStyle = 'yellow';
-        ctx.lineWidth = 2;
-        ctx.stroke();
+  /**
+   * Casts rays outward from the car's position.
+   * Rays are evenly spread within the specified angle.
+   */
+  #castRays() {
+    this.rays = [];
+    for (let i = 0; i < this.rayCount; i++) {
+      const rayAngle =
+        this.car.angle -
+        this.raySpread / 2 +
+        (i / (this.rayCount - 1)) * this.raySpread;
 
-        // Draw the intersection point (if it exists)
-        if (reading) {
-            ctx.beginPath();
-            ctx.arc(reading.x, reading.y, 4, 0, Math.PI * 2);
-            ctx.fillStyle = 'red';
-            ctx.fill();
-        }
-        }
+      const start = { x: this.car.x, y: this.car.y };
+      const end = {
+        x: this.car.x + Math.sin(rayAngle) * this.rayLength,
+        y: this.car.y - Math.cos(rayAngle) * this.rayLength,
+      };
+
+      this.rays.push({ start, end });
     }
-}
+  }
 
-/**
- * Linear interpolation function.
- * @param a - The start value.
- * @param b - The end value.
- * @param t - The interpolation factor (0 to 1).
- * @returns The interpolated value.
- */
-function lerp(a: number, b: number, t: number): number {
-    return a + (b - a) * t;
-}
+  /**
+   * Detects the intersection of a ray with the road boundaries.
+   * @param {object} ray - The ray segment (start and end points).
+   * @param {Road} road - The road object for boundary detection.
+   * @returns {object | null} - The closest intersection point or null if none is found.
+   */
+  #getIntersection(ray: { start: { x: number; y: number }; end: { x: number; y: number } }, road: Road) {
+    let closestPoint = null;
+    let minDistance = Infinity;
 
-/**
- * Calculates the intersection point between two line segments.
- * @param A - The start point of the first line segment.
- * @param B - The end point of the first line segment.
- * @param C - The start point of the second line segment.
- * @param D - The end point of the second line segment.
- * @returns The intersection point and distance, or null if no intersection is found.
- */
-function getIntersection(
-    A: { x: number; y: number },
-    B: { x: number; y: number },
-    C: { x: number; y: number },
-    D: { x: number; y: number }
-): { point: { x: number; y: number }; distance: number } | null {
-    const tTop = (D.x - C.x) * (A.y - C.y) - (D.y - C.y) * (A.x - C.x);
-    const uTop = (C.y - A.y) * (A.x - B.x) - (C.x - A.x) * (A.y - B.y);
-    const bottom = (D.y - C.y) * (B.x - A.x) - (D.x - C.x) * (B.y - A.y);
+    // Check against the road boundaries
+    const roadBoundaries = [
+      { start: { x: road.left, y: road.top }, end: { x: road.left, y: road.bottom } },
+      { start: { x: road.right, y: road.top }, end: { x: road.right, y: road.bottom } },
+    ];
 
-    if (bottom !== 0) {
-    const t = tTop / bottom;
-    const u = uTop / bottom;
+    for (const boundary of roadBoundaries) {
+      const intersection = this.#getRayIntersection(ray, boundary);
+      if (intersection) {
+        const distance = Math.hypot(intersection.x - ray.start.x, intersection.y - ray.start.y);
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestPoint = intersection;
+        }
+      }
+    }
+
+    return closestPoint;
+  }
+
+  /**
+   * Calculates the intersection point between two line segments.
+   * @param {object} ray - The ray segment.
+   * @param {object} boundary - A boundary segment.
+   * @returns {object | null} - Intersection point or null if none is found.
+   */
+  #getRayIntersection(ray: { start: { x: number; y: number }; end: { x: number; y: number } }, boundary: { start: { x: number; y: number }; end: { x: number; y: number } }) {
+    const x1 = ray.start.x, y1 = ray.start.y;
+    const x2 = ray.end.x, y2 = ray.end.y;
+    const x3 = boundary.start.x, y3 = boundary.start.y;
+    const x4 = boundary.end.x, y4 = boundary.end.y;
+
+    const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+    if (denom === 0) return null; // Lines are parallel or coincident
+
+    const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+    const u = ((x1 - x3) * (y1 - y2) - (y1 - y3) * (x1 - x2)) / denom;
+
     if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
-        return {
-        point: {
-            x: lerp(A.x, B.x, t),
-            y: lerp(A.y, B.y, t),
-        },
-        distance: t,
-        };
-    }
+      return {
+        x: x1 + t * (x2 - x1),
+        y: y1 + t * (y2 - y1),
+      };
     }
 
-    return null;
+    return null; // No intersection
+  }
+
+  /**
+   * Renders the sensor rays and their readings on the canvas.
+   * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+   */
+  draw(ctx: CanvasRenderingContext2D) {
+    for (let i = 0; i < this.rays.length; i++) {
+      const ray = this.rays[i];
+      const reading = this.readings[i];
+
+      // Draw the ray
+      ctx.beginPath();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "yellow";
+      ctx.moveTo(ray.start.x, ray.start.y);
+      if (reading) {
+        ctx.lineTo(reading.x, reading.y);
+      } else {
+        ctx.lineTo(ray.end.x, ray.end.y);
+      }
+      ctx.stroke();
+
+      // Draw the intersection point
+      if (reading) {
+        ctx.beginPath();
+        ctx.arc(reading.x, reading.y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = "red";
+        ctx.fill();
+      }
+    }
+  }
 }
