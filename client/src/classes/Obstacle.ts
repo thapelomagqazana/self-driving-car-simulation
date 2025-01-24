@@ -21,7 +21,7 @@ export class Obstacle {
    * @returns {object | null} - The intersection point or null if no intersection occurs.
    */
   getIntersection(ray: { start: { x: number; y: number }; end: { x: number; y: number } }): { x: number; y: number } | null {
-    const edges = this.#getEdges();
+    const edges = this.getEdges();
     let closestPoint: { x: number; y: number } | null = null;
     let minDistance = Infinity;
 
@@ -44,16 +44,15 @@ export class Obstacle {
    * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
    */
   draw(ctx: CanvasRenderingContext2D) {
-    ctx.fillStyle = "red";
+    ctx.fillStyle = "green";
     ctx.fillRect(this.x, this.y, this.width, this.height);
   }
 
   /**
    * Returns the edges of the obstacle as line segments.
-   * @private
    * @returns {Array<object>} - Array of edges represented as start and end points.
    */
-  #getEdges() {
+  getEdges() {
     return [
       { start: { x: this.x, y: this.y }, end: { x: this.x + this.width, y: this.y } }, // Top edge
       { start: { x: this.x + this.width, y: this.y }, end: { x: this.x + this.width, y: this.y + this.height } }, // Right edge

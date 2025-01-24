@@ -66,7 +66,7 @@ const Canvas: React.FC<CanvasProps> = ({ width, height }) => {
       }
 
       // Update and draw car
-      car.update(keys.ArrowUp, keys.ArrowDown, keys.ArrowLeft, keys.ArrowRight);
+      car.update(keys.ArrowUp, keys.ArrowDown, keys.ArrowLeft, keys.ArrowRight, road, obstacles);
       car.draw(ctx);
 
       // Update and draw sensor
