@@ -1,89 +1,83 @@
 /**
- * Represents a 2D road with lanes, curves, and boundaries.
+ * Represents a road in the simulation.
+ * Handles lane boundaries and road markings.
  */
 export class Road {
-    /**
-     * The width of the road (including all lanes).
-     */
-    public width: number;
-  
-    /**
-     * The number of lanes on the road.
-     */
-    public laneCount: number;
-  
-    /**
-     * The points defining the centerline of the road.
-     */
-    public points: { x: number; y: number }[];
-  
-    /**
-     * The boundaries of the road.
-     */
-    public borders: { x: number; y: number }[][];
-  
-    /**
-     * Creates a new Road instance.
-     * @param width - The width of the road.
-     * @param laneCount - The number of lanes on the road.
-     * @param points - The points defining the centerline of the road.
-     */
-    constructor(width: number, laneCount: number, points: { x: number; y: number }[]) {
-      this.width = width;
-      this.laneCount = laneCount;
-      this.points = points;
-      this.borders = this.calculateBorders();
-    }
-  
-    /**
-     * Calculates the road boundaries based on the centerline and width.
-     * @returns An array of line segments representing the road boundaries.
-     */
-    private calculateBorders(): { x: number; y: number }[][] {
-      const borders: { x: number; y: number }[][] = [];
-  
-      for (let i = 0; i < this.points.length - 1; i++) {
-        const start = this.points[i];
-        const end = this.points[i + 1];
-  
-        // Calculate the angle of the road segment
-        const angle = Math.atan2(end.y - start.y, end.x - start.x);
-  
-        // Calculate the perpendicular offsets for the boundaries
-        const offsetX = Math.sin(angle) * (this.width / 2);
-        const offsetY = Math.cos(angle) * (this.width / 2);
-  
-        // Define the left and right boundaries
-        const leftStart = { x: start.x - offsetX, y: start.y + offsetY };
-        const leftEnd = { x: end.x - offsetX, y: end.y + offsetY };
-        const rightStart = { x: start.x + offsetX, y: start.y - offsetY };
-        const rightEnd = { x: end.x + offsetX, y: end.y - offsetY };
-  
-        // Add the boundary segments to the borders array
-        borders.push([leftStart, leftEnd]);
-        borders.push([rightStart, rightEnd]);
-      }
-  
-      return borders;
-    }
-  
-    /**
-     * Draws the road on the canvas.
-     * @param ctx - The canvas rendering context.
-     */
-    public draw(ctx: CanvasRenderingContext2D): void {
-      ctx.save();
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = 5;
-  
-      // Draw the road boundaries
-      this.borders.forEach((border) => {
-        ctx.beginPath();
-        ctx.moveTo(border[0].x, border[0].y);
-        ctx.lineTo(border[1].x, border[1].y);
-        ctx.stroke();
-      });
-  
-      ctx.restore();
-    }
+  x: number; // X-coordinate of the road's center
+  width: number; // Total width of the road
+  laneCount: number; // Number of lanes
+  left: number; // Left boundary of the road
+  right: number; // Right boundary of the road
+  top: number; // Top boundary of the visible road
+  bottom: number; // Bottom boundary of the visible road
+  laneWidth: number; // Width of each lane
+
+  constructor(x: number, width: number, laneCount: number = 3) {
+    this.x = x;
+    this.width = width;
+    this.laneCount = laneCount;
+
+    this.left = x - width / 2;
+    this.right = x + width / 2;
+    this.top = -Infinity; // Roads are theoretically infinite vertically
+    this.bottom = Infinity;
+
+    this.laneWidth = width / laneCount;
   }
+
+  /**
+   * Returns the X-coordinate of the center of a given lane.
+   * @param {number} laneIndex - The index of the lane (0 is the leftmost lane).
+   * @returns {number} - The X-coordinate of the lane center.
+   */
+  getLaneCenter(laneIndex: number): number {
+    const clampedLaneIndex = Math.min(
+      Math.max(laneIndex, 0),
+      this.laneCount - 1
+    );
+    return this.left + this.laneWidth / 2 + clampedLaneIndex * this.laneWidth;
+  }
+
+  /**
+   * Renders the road on the canvas.
+   * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+   */
+  draw(ctx: CanvasRenderingContext2D) {
+    ctx.lineWidth = 5;
+
+    // Draw lane boundaries
+    ctx.strokeStyle = "white";
+    for (let i = 0; i <= this.laneCount; i++) {
+      const x = this.left + i * this.laneWidth;
+
+      // Solid boundaries for the road's edges
+      if (i === 0 || i === this.laneCount) {
+        ctx.beginPath();
+        ctx.moveTo(x, this.top);
+        ctx.lineTo(x, this.bottom);
+        ctx.stroke();
+      } else {
+        // Dashed lines for inner lane markings
+        ctx.setLineDash([20, 20]);
+        ctx.beginPath();
+        ctx.moveTo(x, this.top);
+        ctx.lineTo(x, this.bottom);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset dash style
+      }
+    }
+
+    // Draw the outer road boundaries
+    ctx.strokeStyle = "yellow";
+    ctx.setLineDash([]); // Solid lines for boundaries
+    ctx.beginPath();
+    ctx.moveTo(this.left, this.top);
+    ctx.lineTo(this.left, this.bottom);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(this.right, this.top);
+    ctx.lineTo(this.right, this.bottom);
+    ctx.stroke();
+  }
+}
