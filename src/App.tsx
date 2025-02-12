@@ -12,8 +12,16 @@ const App: React.FC = () => {
    * @param ctx - The canvas rendering context.
    */
   const draw = (ctx: CanvasRenderingContext2D) => {
+    // Clear the canvas
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+    // Draw a black background
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+    // Example: Draw a red rectangle (car)
+    ctx.fillStyle = 'red';
+    ctx.fillRect(50, 50, 100, 50); // x, y, width, height
   };
 
   return (
