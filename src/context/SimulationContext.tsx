@@ -7,19 +7,23 @@ import React, { createContext, useContext, useState } from 'react';
  * - `carAngle`: The current angle (direction) of the car.
  * - `friction`: The friction coefficient (slows down the car over time).
  * - `inertia`: The inertia coefficient (resists changes in direction).
+ * - `isReversing`: Whether the car is in reverse mode.
  * - `setCarPosition`: Function to update the car's position.
  * - `setCarSpeed`: Function to update the car's speed.
  * - `setCarAngle`: Function to update the car's angle.
+ * - `setIsReversing`: Function to toggle reverse mode.
  */
 interface SimulationState {
-  carPosition: { x: number; y: number };
-  carSpeed: number;
-  carAngle: number;
-  friction: number;
-  inertia: number;
-  setCarPosition: (position: { x: number; y: number } | ((prev: { x: number; y: number }) => { x: number; y: number })) => void;
-  setCarSpeed: (speed: number | ((prev: number) => number)) => void;
-  setCarAngle: (angle: number | ((prev: number) => number)) => void;
+    carPosition: { x: number; y: number };
+    carSpeed: number;
+    carAngle: number;
+    friction: number;
+    inertia: number;
+    isReversing: boolean;
+    setCarPosition: (position: { x: number; y: number } | ((prev: { x: number; y: number }) => { x: number; y: number })) => void;
+    setCarSpeed: (speed: number | ((prev: number) => number)) => void;
+    setCarAngle: (angle: number | ((prev: number) => number)) => void;
+    setIsReversing: (isReversing: boolean | ((prev: boolean) => boolean)) => void; // Updated to accept a function
 }
 
 /**
@@ -31,7 +35,7 @@ const SimulationContext = createContext<SimulationState | null>(null);
 /**
  * SimulationProvider component.
  * - Wraps the application and provides the simulation state to all child components.
- * - Manages the car's position, speed, angle, friction, and inertia.
+ * - Manages the car's position, speed, angle, friction, inertia, and reverse mode.
  */
 export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [carPosition, setCarPosition] = useState({ x: 0, y: 0 });
@@ -39,21 +43,12 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [carAngle, setCarAngle] = useState(0); // Angle in radians
   const [friction, setFriction] = useState(0.02); // Friction coefficient
   const [inertia, setInertia] = useState(0.1); // Inertia coefficient
-
-  // Create the value object that matches the SimulationState interface
-  const value: SimulationState = {
-    carPosition,
-    carSpeed,
-    carAngle,
-    friction,
-    inertia,
-    setCarPosition,
-    setCarSpeed,
-    setCarAngle,
-  };
+  const [isReversing, setIsReversing] = useState(false); // Reverse mode
 
   return (
-    <SimulationContext.Provider value={value}>
+    <SimulationContext.Provider
+      value={{ carPosition, carSpeed, carAngle, friction, inertia, isReversing, setCarPosition, setCarSpeed, setCarAngle, setIsReversing }}
+    >
       {children}
     </SimulationContext.Provider>
   );
