@@ -1,47 +1,28 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
+// import './Canvas.css';
 
 /**
  * Props for the Canvas component.
+ * - `width`: The width of the canvas.
+ * - `height`: The height of the canvas.
  * - `draw`: Function to draw on the canvas.
- * - `aspectRatio`: The aspect ratio (width / height) of the canvas.
  */
 interface CanvasProps {
-  draw: (ctx: CanvasRenderingContext2D, width: number, height: number) => void;
-  aspectRatio: number; // Width / Height
+  width: number;
+  height: number;
+  draw: (ctx: CanvasRenderingContext2D) => void;
 }
 
 /**
- * A reusable and responsive Canvas component for rendering 2D graphics.
- * - Dynamically adjusts the canvas size based on the parent container's dimensions.
- * - Maintains the specified aspect ratio to prevent distortion.
+ * A reusable Canvas component for rendering 2D graphics.
+ * - Uses the Canvas API to draw on a `<canvas>` element.
+ * - Calls the `draw` function whenever the component updates.
  */
-const Canvas: React.FC<CanvasProps> = ({ draw, aspectRatio }) => {
+const Canvas: React.FC<CanvasProps> = ({ width, height, draw }) => {
+  // Reference to the canvas element
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
-  /**
-   * Update the canvas dimensions based on the parent container's size.
-   */
-  const updateDimensions = () => {
-    const parent = canvasRef.current?.parentElement;
-    if (!parent) return;
-
-    // Calculate the width and height based on the parent's width and the aspect ratio
-    const parentWidth = parent.clientWidth;
-    const width = Math.min(parentWidth, window.innerWidth); // Ensure it doesn't exceed the viewport width
-    const height = width / aspectRatio;
-
-    setDimensions({ width, height });
-  };
-
-  // Update dimensions on mount and window resize
-  useEffect(() => {
-    updateDimensions();
-    window.addEventListener('resize', updateDimensions);
-    return () => window.removeEventListener('resize', updateDimensions);
-  }, []);
-
-  // Draw on the canvas whenever dimensions or the draw function changes
+  // Effect to handle drawing on the canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -49,17 +30,19 @@ const Canvas: React.FC<CanvasProps> = ({ draw, aspectRatio }) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear the canvas and redraw
-    ctx.clearRect(0, 0, dimensions.width, dimensions.height);
-    draw(ctx, dimensions.width, dimensions.height);
-  }, [draw, dimensions]);
+    // Clear the canvas before drawing
+    ctx.clearRect(0, 0, width, height);
+
+    // Call the draw function with the canvas context
+    draw(ctx);
+  }, [draw, width, height]);
 
   return (
     <canvas
       ref={canvasRef}
-      width={dimensions.width}
-      height={dimensions.height}
-      style={{ width: '100%', height: 'auto' }} // Make the canvas responsive
+      width={width}
+      height={height}
+      style={{ border: '1px solid black' }} // Optional: Add a border for visibility
     />
   );
 };

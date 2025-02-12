@@ -12,16 +12,16 @@ interface CarProps {
 
 /**
  * A reusable Car component for rendering the car in the simulation.
- * - Uses the simulation context to get the car's position.
+ * - Uses the simulation context to get the car's position and angle.
  */
 const Car: React.FC<CarProps> = ({ color }) => {
-  const { carPosition } = useSimulation();
+  const { carPosition, carAngle } = useSimulation();
 
   return (
     <div
       className="car"
       style={{
-        transform: `translate(${carPosition.x}px, ${carPosition.y}px)`,
+        transform: `translate(${carPosition.x}px, ${carPosition.y}px) rotate(${carAngle}rad)`,
         backgroundColor: color,
       }}
     />
