@@ -5,7 +5,16 @@ import Car from './components/Car/Car';
 import Canvas from './components/Canvas/Canvas';
 
 const App: React.FC = () => {
-  const { carPosition, carSpeed, carAngle, setCarPosition, setCarSpeed, setCarAngle } = useSimulation();
+  const {
+    carPosition,
+    carSpeed,
+    carAngle,
+    friction,
+    inertia,
+    setCarPosition,
+    setCarSpeed,
+    setCarAngle,
+  } = useSimulation();
 
   /**
    * Update the car's position based on its speed and angle.
@@ -24,7 +33,7 @@ const App: React.FC = () => {
    * Handle acceleration and braking.
    */
   const handleAcceleration = (acceleration: number) => {
-    const newSpeed = calculateSpeed(carSpeed, acceleration, 10); // Max speed of 10
+    const newSpeed = calculateSpeed(carSpeed, acceleration, friction, 10); // Max speed of 10
     setCarSpeed(newSpeed);
   };
 
@@ -32,7 +41,7 @@ const App: React.FC = () => {
    * Handle steering.
    */
   const handleSteering = (deltaAngle: number) => {
-    const newAngle = calculateAngle(carAngle, deltaAngle);
+    const newAngle = calculateAngle(carAngle, deltaAngle, inertia);
     setCarAngle(newAngle);
   };
 
@@ -61,7 +70,7 @@ const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown); // Cleanup event listener
-  }, [carSpeed, carAngle]);
+  }, [carSpeed, carAngle, friction, inertia]);
 
   return (
     <div>
