@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSimulation } from './context/SimulationContext';
 import { calculateSpeed, calculateAngle, calculatePosition } from './utils/physics';
+import { defineRoad, drawRoad } from './utils/road';
 import { drawTireMarks } from './utils/tireMarks';
 import { drawHeadlights } from './utils/headlights';
 import Car from './components/Car/Car';
@@ -22,6 +23,8 @@ const App: React.FC = () => {
 
   const [tireMarks, setTireMarks] = useState<Array<{ x: number; y: number; angle: number }>>([]);
 
+  const [road, setRoad] = useState<RoadSegment[]>([]);
+
   /**
    * Update the car's position based on its speed and angle.
    */
@@ -34,6 +37,12 @@ const App: React.FC = () => {
     const interval = setInterval(moveCar, 16); // Update position every 16ms (~60 FPS)
     return () => clearInterval(interval); // Cleanup interval on unmount
   }, [carPosition, carSpeed, carAngle, setCarPosition]);
+
+  // Define the road on component mount
+  useEffect(() => {
+    const road = defineRoad();
+    setRoad(road);
+  }, []);
 
   /**
    * Handle acceleration and braking.
@@ -70,6 +79,9 @@ const App: React.FC = () => {
     // Draw a black background
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+    // Draw the road
+    drawRoad(ctx, road);
 
     // Draw tire marks
     const updatedTireMarks = drawTireMarks(ctx, carPosition, carAngle, tireMarks);
