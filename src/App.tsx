@@ -1,6 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSimulation } from './context/SimulationContext';
 import { calculateSpeed, calculateAngle, calculatePosition } from './utils/physics';
+import { drawTireMarks } from './utils/tireMarks';
+import { drawHeadlights } from './utils/headlights';
 import Car from './components/Car/Car';
 import Canvas from './components/Canvas/Canvas';
 
@@ -17,6 +19,8 @@ const App: React.FC = () => {
     setCarAngle,
     setIsReversing,
   } = useSimulation();
+
+  const [tireMarks, setTireMarks] = useState<Array<{ x: number; y: number; angle: number }>>([]);
 
   /**
    * Update the car's position based on its speed and angle.
@@ -56,7 +60,7 @@ const App: React.FC = () => {
 
   /**
    * Draw function for the canvas.
-   * - Fills the canvas with a black background and draws the car.
+   * - Fills the canvas with a black background, draws the car, tire marks, and headlights.
    * @param ctx - The canvas rendering context.
    */
   const draw = (ctx: CanvasRenderingContext2D) => {
@@ -66,6 +70,13 @@ const App: React.FC = () => {
     // Draw a black background
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+    // Draw tire marks
+    const updatedTireMarks = drawTireMarks(ctx, carPosition, carAngle, tireMarks);
+    setTireMarks(updatedTireMarks);
+
+    // Draw headlights
+    drawHeadlights(ctx, carPosition, carAngle);
 
     // Save the current canvas state
     ctx.save();
