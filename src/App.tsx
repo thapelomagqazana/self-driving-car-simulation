@@ -55,21 +55,51 @@ const App: React.FC = () => {
   };
 
   /**
+   * Draw function for the canvas.
+   * - Fills the canvas with a black background and draws the car.
+   * @param ctx - The canvas rendering context.
+   */
+  const draw = (ctx: CanvasRenderingContext2D) => {
+    // Clear the canvas
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+    // Draw a black background
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+    // Save the current canvas state
+    ctx.save();
+
+    // Translate to the car's position
+    ctx.translate(carPosition.x, carPosition.y);
+
+    // Rotate the canvas to match the car's angle
+    ctx.rotate(carAngle);
+
+    // Draw the car as a rectangle
+    ctx.fillStyle = 'red';
+    ctx.fillRect(-25, -15, 50, 30); // Center the car at (0, 0)
+
+    // Restore the canvas state
+    ctx.restore();
+  };
+
+  /**
    * Example: Simulate user input for acceleration, braking, steering, and reversing.
    */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       switch (e.key) {
-        case 'ArrowUp':
+        case 'w':
           handleAcceleration(0.1); // Accelerate
           break;
-        case 'ArrowDown':
+        case 's':
           handleAcceleration(-0.1); // Brake
           break;
-        case 'ArrowLeft':
+        case 'a':
           handleSteering(-0.05); // Steer left
           break;
-        case 'ArrowRight':
+        case 'd':
           handleSteering(0.05); // Steer right
           break;
         case 'r': // Toggle reverse mode
@@ -87,7 +117,7 @@ const App: React.FC = () => {
   return (
     <div>
       <h1>2D Self-Driving Car Simulation</h1>
-      <Canvas width={800} height={600} draw={() => {}} />
+      <Canvas width={800} height={600} draw={draw} />
       <Car color="red" />
       <p>Reverse Mode: {isReversing ? 'ON' : 'OFF'}</p>
     </div>
