@@ -99,6 +99,7 @@ const GameLoop: React.FC = () => {
             >
                 {isRunning ? "Pause" : "Resume"}
             </button>
+            <button onClick={() => car.current.reset()}>Reset Car</button>
         </div>
     );
 };

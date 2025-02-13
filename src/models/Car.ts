@@ -17,6 +17,9 @@ export default class Car {
     controls: { left: boolean; right: boolean; up: boolean; down: boolean }; // Input controls
     road: Road; // Reference to the road for boundary checks
     sensor: Sensor;
+    width: number; // Width of the car (for collision detection)
+    height: number; // Height of the car (for collision detection)
+    collided: boolean; // Flag to indicate if the car has collided
 
     constructor(x: number, y: number, road: Road) {
         this.x = x;
@@ -30,6 +33,9 @@ export default class Car {
         this.controls = { left: false, right: false, up: false, down: false };
         this.road = road; // Store reference to road
         this.sensor = new Sensor(x, y, road); // Initialize sensor
+        this.width = 50; // Car width
+        this.height = 30; // Car height
+        this.collided = false; // Collision flag
 
         this.#setupKeyboardListeners();
     }
@@ -38,6 +44,7 @@ export default class Car {
      * Updates the car's position, velocity, rotation, and enforces road boundaries.
      */
     update() {
+        if (this.collided) return; // Stop updating if a collision has occurred
         // Apply acceleration when moving forward
         if (this.controls.up) {
             this.speed += this.acceleration;
@@ -77,18 +84,35 @@ export default class Car {
         const newX = this.x + Math.cos(this.angle) * this.speed;
         const newY = this.y + Math.sin(this.angle) * this.speed;
 
-        // Enforce lane boundaries
-        if (newX - 25 >= this.road.leftBoundary && newX + 25 <= this.road.rightBoundary) {
-            this.x = newX; // Update position only if within boundaries
-        } else {
-            this.speed = 0; // Stop car if at boundary
+        // Check for collision with road boundaries
+        if (this.#checkCollision(newX)) {
+            this.speed = 0; // Stop the car if a collision occurs
+            this.collided = true; // Mark as collided
+            return;
         }
 
-        this.y = newY; // Allow movement along Y-axis
+        this.x = newX;
+        this.y = newY;
         this.sensor.update(this.x, this.y, this.angle); // Update sensors
     }
 
-    
+    /**
+     * Checks if the car has collided with the road boundaries.
+     * @param newX - The car's new X position
+     * @returns True if collision occurs, otherwise false
+     */
+    #checkCollision(newX: number): boolean {
+        const carLeftEdge = newX - this.width / 2;
+        const carRightEdge = newX + this.width / 2;
+
+        // If the car's edges exceed the road boundaries, return true
+        if (carLeftEdge < this.road.leftBoundary || carRightEdge > this.road.rightBoundary) {
+            console.log("Collision Detected!");
+            return true;
+        }
+
+        return false;
+    }
 
     /**
      * Handles keyboard inputs to control the car.
@@ -145,5 +169,16 @@ export default class Car {
 
         ctx.restore();
         this.sensor.draw(ctx);
+    }
+
+    /**
+     * Resets the car to the starting position after a collision.
+     */
+    reset() {
+        this.x = this.road.getLaneCenter(1);
+        this.y = window.innerHeight - 100;
+        this.angle = 0;
+        this.speed = 0;
+        this.collided = false;
     }
 }
