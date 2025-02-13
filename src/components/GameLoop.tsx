@@ -1,17 +1,23 @@
 import React, { useRef, useEffect, useState } from "react";
 import Car from "../models/Car";
+import Road from "../models/Road";
 
 /**
  * GameLoop Component
- * Implements a smooth game loop at 60 FPS and integrates a Car object.
+ * Implements a smooth game loop at 60 FPS and integrates a Car and Road.
  */
 const GameLoop: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationFrameId = useRef<number | null>(null);
   const [isRunning, setIsRunning] = useState<boolean>(true);
 
-  // Create the car instance
-  const car = useRef(new Car(window.innerWidth / 2, window.innerHeight / 2));
+  // Define road parameters
+  const roadWidth = 300;
+  const laneCount = 3;
+  const road = useRef(new Road(window.innerWidth / 2, roadWidth, laneCount));
+
+  // Create the car instance (start in the center lane)
+  const car = useRef(new Car(road.current.getLaneCenter(1), window.innerHeight - 100));
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -44,11 +50,13 @@ const GameLoop: React.FC = () => {
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Update car physics
-        car.current.update();
+        // Draw the road
+        road.current.draw(ctx);
 
-        // Draw car
+        // Update and draw car
+        car.current.update();
         car.current.draw(ctx);
+        
 
         animationFrameId.current = requestAnimationFrame(gameLoop);
       } else {
