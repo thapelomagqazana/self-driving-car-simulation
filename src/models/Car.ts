@@ -1,4 +1,5 @@
 import Road from "./Road";
+import Sensor from "./Sensor";
 
 /**
  * Car Class
@@ -15,6 +16,7 @@ export default class Car {
     turnSpeed: number; // Rate of turning
     controls: { left: boolean; right: boolean; up: boolean; down: boolean }; // Input controls
     road: Road; // Reference to the road for boundary checks
+    sensor: Sensor;
 
     constructor(x: number, y: number, road: Road) {
         this.x = x;
@@ -27,6 +29,7 @@ export default class Car {
         this.turnSpeed = 0.03;
         this.controls = { left: false, right: false, up: false, down: false };
         this.road = road; // Store reference to road
+        this.sensor = new Sensor(x, y, road); // Initialize sensor
 
         this.#setupKeyboardListeners();
     }
@@ -82,7 +85,10 @@ export default class Car {
         }
 
         this.y = newY; // Allow movement along Y-axis
+        this.sensor.update(this.x, this.y, this.angle); // Update sensors
     }
+
+    
 
     /**
      * Handles keyboard inputs to control the car.
@@ -138,5 +144,6 @@ export default class Car {
         ctx.fillRect(-25, -15, 50, 30);
 
         ctx.restore();
+        this.sensor.draw(ctx);
     }
 }
