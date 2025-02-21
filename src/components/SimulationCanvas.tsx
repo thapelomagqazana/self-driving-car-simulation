@@ -1,15 +1,15 @@
 import { useRef, useEffect, useState } from "react";
 import Car from "../models/Car";
-import DebugInfo from "./DebugInfo";
 import Road from "../models/Road";
+import DebugInfo from "./DebugInfo";
 
 /**
- * SimulationCanvas Component: Renders the simulation and allows toggling AI/manual mode.
+ * SimulationCanvas Component: Handles rendering the simulation and camera movement.
  */
 const SimulationCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isAIControlled, setIsAIControlled] = useState(false);
-  const road = new Road(200, 300, 3); // Centered at x=200, width=300px, 3 lanes
+  const road = new Road(200, 300, 3); 
   const [car, setCar] = useState(new Car(road.getLaneCenter(1), 500, road, isAIControlled));
 
   // Debugging state
@@ -21,7 +21,7 @@ const SimulationCanvas = () => {
   });
 
   useEffect(() => {
-    setCar(new Car(road.getLaneCenter(1), 500, road, isAIControlled)); // Reset car on mode change
+    setCar(new Car(road.getLaneCenter(1), 500, road, isAIControlled)); 
   }, [isAIControlled]);
 
   useEffect(() => {
@@ -36,20 +36,28 @@ const SimulationCanvas = () => {
     window.addEventListener("keyup", handleKeyUp);
 
     /**
-     * Animation loop to update and draw the car.
+     * Animation loop to update and draw the scene.
      */
     const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvasHeight);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Update road scrolling
+      // Smooth Camera Follow
+      const cameraY = -car.y + canvasHeight * 0.7; 
+
+      ctx.save();
+      ctx.translate(0, cameraY);
+
+      // Draw road and update scrolling
       road.updateScroll(car.y);
-
-      // Draw the road with scrolling effect
       road.draw(ctx, canvasHeight);
+
+      // Update and draw car
       car.update();
       car.draw(ctx);
 
-      // Update debug state on every frame
+      ctx.restore();
+
+      // Update debug state dynamically
       setDebugInfo({
         x: car.x,
         y: car.y,
@@ -72,12 +80,12 @@ const SimulationCanvas = () => {
     <div className="relative flex flex-col items-center">
       <canvas ref={canvasRef} width={400} height={500} className="bg-gray-800" />
 
-      {/* Debug Info Panel (Now Updates Dynamically) */}
+      {/* Debug Info Panel */}
       <DebugInfo 
         x={debugInfo.x} 
         y={debugInfo.y} 
         speed={debugInfo.speed} 
-        angle={debugInfo.angle * (180 / Math.PI)} // Convert radians to degrees
+        angle={debugInfo.angle * (180 / Math.PI)} 
         isAIControlled={isAIControlled} 
       />
 
