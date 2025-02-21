@@ -27,6 +27,7 @@ const SimulationCanvas = () => {
   useEffect(() => {
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
+    const canvasHeight = canvas.height;
 
     const handleKeyDown = (event: KeyboardEvent) => car.handleInput(event, true);
     const handleKeyUp = (event: KeyboardEvent) => car.handleInput(event, false);
@@ -38,9 +39,13 @@ const SimulationCanvas = () => {
      * Animation loop to update and draw the car.
      */
     const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, canvas.width, canvasHeight);
 
-      road.draw(ctx); // Draw the road first
+      // Update road scrolling
+      road.updateScroll(car.y);
+
+      // Draw the road with scrolling effect
+      road.draw(ctx, canvasHeight);
       car.update();
       car.draw(ctx);
 

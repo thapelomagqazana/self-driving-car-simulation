@@ -5,6 +5,8 @@ export default class Road {
     leftBoundary: number; // Left boundary of the road
     rightBoundary: number; // Right boundary of the road
     laneWidth: number; // Width of each lane
+    segmentLength: number; // Height of each road segment
+    scrollOffset: number; // Tracks how much the road has scrolled
   
     /**
      * Constructs a new Road instance.
@@ -16,13 +18,12 @@ export default class Road {
       this.x = x;
       this.width = width;
       this.laneCount = laneCount;
-  
-      // Compute lane width
       this.laneWidth = this.width / this.laneCount;
-  
-      // Compute road boundaries
       this.leftBoundary = this.x - this.width / 2;
       this.rightBoundary = this.x + this.width / 2;
+  
+      this.segmentLength = 200; // Each segment is 200px tall
+      this.scrollOffset = 0;
     }
   
     /**
@@ -36,34 +37,47 @@ export default class Road {
     }
   
     /**
+     * Scrolls the road downward as the car moves up.
+     * @param carY - The current Y position of the car.
+     */
+    updateScroll(carY: number) {
+      this.scrollOffset = -carY % this.segmentLength;
+    }
+  
+    /**
      * Draws the road and lane markings.
      * @param ctx - The 2D rendering context of the canvas.
+     * @param canvasHeight - The total height of the canvas.
      */
-    draw(ctx: CanvasRenderingContext2D) {
+    draw(ctx: CanvasRenderingContext2D, canvasHeight: number) {
       ctx.lineWidth = 4;
       ctx.strokeStyle = "#ffffff"; // White road lines
+      ctx.setLineDash([20, 20]); // Dashed lines
   
-      // Draw lane dividers
-      for (let i = 1; i < this.laneCount; i++) {
-        const x = this.leftBoundary + i * this.laneWidth;
+      // Draw multiple road segments for infinite scrolling
+      for (let i = 0; i < Math.ceil(canvasHeight / this.segmentLength) + 1; i++) {
+        const y = this.scrollOffset + i * this.segmentLength;
   
-        ctx.setLineDash([20, 20]); // Dashed lines
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, ctx.canvas.height);
-        ctx.stroke();
+        // Draw lane dividers
+        for (let j = 1; j < this.laneCount; j++) {
+          const x = this.leftBoundary + j * this.laneWidth;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x, y + this.segmentLength);
+          ctx.stroke();
+        }
       }
   
       // Draw road boundaries
       ctx.setLineDash([]); // Solid lines
       ctx.beginPath();
       ctx.moveTo(this.leftBoundary, 0);
-      ctx.lineTo(this.leftBoundary, ctx.canvas.height);
+      ctx.lineTo(this.leftBoundary, canvasHeight);
       ctx.stroke();
   
       ctx.beginPath();
       ctx.moveTo(this.rightBoundary, 0);
-      ctx.lineTo(this.rightBoundary, ctx.canvas.height);
+      ctx.lineTo(this.rightBoundary, canvasHeight);
       ctx.stroke();
     }
 }
