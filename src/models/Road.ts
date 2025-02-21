@@ -21,7 +21,7 @@ export default class Road {
 
         // **Initialize Road Segments for Smooth Recycling**
         this.segments = [];
-        for (let i = 0; i < 15; i++) { // Increased to 15 for smoother recycling
+        for (let i = 0; i < 15; i++) { // Keep extra segments for recycling
             this.segments.push(i * this.segmentLength);
         }
     }
@@ -39,35 +39,31 @@ export default class Road {
     updateScroll(carY: number) {
         this.scrollOffset = -carY % this.segmentLength;
 
-        // Ensure Proper Segment Recycling at High Speeds**
-        while (this.segments[0] + this.scrollOffset > this.segmentLength) {
-            const removedSegment = this.segments.shift()!; // Remove top segment
-            const newSegmentY = this.segments[this.segments.length - 1] + this.segmentLength; // Append at bottom
-            this.segments.push(newSegmentY);
+        // **Fix: Proper Segment Recycling Without Unused Variables**
+        while (this.segments.length > 0 && this.segments[0] + this.scrollOffset > this.segmentLength) {
+            this.segments.push(this.segments[this.segments.length - 1] + this.segmentLength);
+            this.segments.shift(); // Remove the top segment
         }
     }
 
     /**
-     * Draws the road with continuous scrolling and correct rendering.
+     * Draws the road with infinite scrolling and lane continuity.
      */
     draw(ctx: CanvasRenderingContext2D, canvasHeight: number) {
         ctx.lineWidth = 4;
         ctx.strokeStyle = "#ffffff";
 
-        // **Fix: Maintain Continuous Lane Markings Across Segments**
+        // **Fix: Use `lineDashOffset` for Continuous Dashed Lines**
         ctx.setLineDash([20, 30]);
+        ctx.lineDashOffset = -this.scrollOffset; // Global dash alignment
 
-        // Render segments efficiently by reusing them
-        for (let i = 0; i < this.segments.length; i++) {
-            const y = this.scrollOffset + this.segments[i];
-
-            for (let j = 1; j < this.laneCount; j++) {
-                const x = this.leftBoundary + j * this.laneWidth;
-                ctx.beginPath();
-                ctx.moveTo(x, y);
-                ctx.lineTo(x, y + this.segmentLength);
-                ctx.stroke();
-            }
+        // **Draw Lane Markings in a Single Pass**
+        for (let j = 1; j < this.laneCount; j++) {
+            const x = this.leftBoundary + j * this.laneWidth;
+            ctx.beginPath();
+            ctx.moveTo(x, -canvasHeight * 10);
+            ctx.lineTo(x, canvasHeight * 10);
+            ctx.stroke();
         }
 
         // **Fix: Ensure Boundaries Extend Indefinitely**
@@ -76,7 +72,7 @@ export default class Road {
 
         // Left boundary
         ctx.beginPath();
-        ctx.moveTo(this.leftBoundary, -canvasHeight * 10); // Increased for infinite rendering
+        ctx.moveTo(this.leftBoundary, -canvasHeight * 10);
         ctx.lineTo(this.leftBoundary, canvasHeight * 10);
         ctx.stroke();
 
