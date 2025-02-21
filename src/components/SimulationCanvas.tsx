@@ -1,30 +1,23 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import Car from "../models/Car";
 
 /**
- * SimulationCanvas Component: Handles rendering the simulation on a HTML5 Canvas.
- * - Initializes and animates the car.
- * - Uses keyboard input for acceleration, braking, and steering.
+ * SimulationCanvas Component: Renders the simulation on a HTML5 Canvas.
+ * - Allows toggling between manual and AI control.
  */
 const SimulationCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  let car = new Car(200, 500); // Initial position of the car
+  const [isAIControlled, setIsAIControlled] = useState(false);
+  let car = new Car(200, 500, isAIControlled);
 
   useEffect(() => {
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
 
     // Handle key press events
-    const handleKeyDown = (event: KeyboardEvent) => {
-      car.handleInput(event, true);
-    };
+    const handleKeyDown = (event: KeyboardEvent) => car.handleInput(event, true);
+    const handleKeyUp = (event: KeyboardEvent) => car.handleInput(event, false);
 
-    // Handle key release events
-    const handleKeyUp = (event: KeyboardEvent) => {
-      car.handleInput(event, false);
-    };
-
-    // Attach event listeners for keyboard input
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
 
@@ -32,24 +25,31 @@ const SimulationCanvas = () => {
      * Animation loop to update and draw the car.
      */
     const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
-
-      car.update(); // Update car physics
-      car.draw(ctx); // Draw the updated car position
-
-      requestAnimationFrame(animate); // Loop the animation
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      car.update();
+      car.draw(ctx);
+      requestAnimationFrame(animate);
     };
 
-    animate(); // Start the animation loop
+    animate();
 
     return () => {
-      // Cleanup event listeners on component unmount
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, []);
+  }, [isAIControlled]); // React to AI toggle
 
-  return <canvas ref={canvasRef} width={400} height={500} className="bg-gray-800" />;
+  return (
+    <div className="flex flex-col items-center">
+      <canvas ref={canvasRef} width={400} height={500} className="bg-gray-800" />
+      <button
+        onClick={() => setIsAIControlled(!isAIControlled)}
+        className="mt-4 p-2 bg-blue-500 text-white rounded"
+      >
+        {isAIControlled ? "Switch to Manual Mode" : "Switch to AI Mode"}
+      </button>
+    </div>
+  );
 };
 
 export default SimulationCanvas;
