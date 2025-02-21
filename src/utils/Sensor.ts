@@ -33,28 +33,31 @@ export class Sensor {
    */
   update(road: Road, obstacles: Obstacle[]) {
     this.#castRays();
-    this.readings = this.rays.map((ray) => this.#getIntersection(ray, road, obstacles));
+    // Ensure only valid rays (with 2 points) are processed
+    this.readings = this.rays.map((ray) =>
+        ray.length === 2 ? this.#getIntersection(ray as [{ x: number; y: number }, { x: number; y: number }], road, obstacles) : null
+    );
   }
 
   /**
    * Casts sensor rays outward from the car.
    */
-  #castRays() {
-    this.rays = [];
-    for (let i = 0; i < this.rayCount; i++) {
-      const angle =
-        this.car.angle +
-        ((i / (this.rayCount - 1)) * this.raySpread - this.raySpread / 2);
+   #castRays() {
+        this.rays = [];
+        for (let i = 0; i < this.rayCount; i++) {
+            const angle =
+            this.car.angle +
+            ((i / (this.rayCount - 1)) * this.raySpread - this.raySpread / 2);
 
-      const start = { x: this.car.x, y: this.car.y };
-      const end = {
-        x: this.car.x + Math.sin(angle) * this.rayLength,
-        y: this.car.y - Math.cos(angle) * this.rayLength,
-      };
+            const start = { x: this.car.x, y: this.car.y };
+            const end = {
+            x: this.car.x + Math.sin(angle) * this.rayLength,
+            y: this.car.y - Math.cos(angle) * this.rayLength,
+            };
 
-      this.rays.push([start, end]);
+            this.rays.push([start, end]);
+        }
     }
-  }
 
   /**
    * Determines the closest intersection point between the ray and obstacles/road.
@@ -65,7 +68,7 @@ export class Sensor {
    */
     #getIntersection(ray: [{ x: number; y: number }, { x: number; y: number }], road: Road, obstacles: Obstacle[]): { x: number; y: number } | null {
         let closest = null;
-        let minDist = Infinity;
+        const minDist = Infinity;
     
         // Get nearest intersection for road boundaries
         closest = this.#findNearestIntersection(ray, this.#getRoadEdges(road), closest, minDist);
@@ -86,14 +89,14 @@ export class Sensor {
         minDist: number
     ) {
         for (const edge of edges) {
-        const intersection = this.#getLineIntersection(ray[0], ray[1], { x: edge.x1, y: edge.y1 }, { x: edge.x2, y: edge.y2 });
-        if (intersection) {
-            const dist = Math.hypot(intersection.x - this.car.x, intersection.y - this.car.y);
-            if (dist < minDist) {
-            minDist = dist;
-            closest = intersection;
+            const intersection = this.#getLineIntersection(ray[0], ray[1], { x: edge.x1, y: edge.y1 }, { x: edge.x2, y: edge.y2 });
+            if (intersection) {
+                const dist = Math.hypot(intersection.x - this.car.x, intersection.y - this.car.y);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closest = intersection;
+                }
             }
-        }
         }
         return closest;
     }
@@ -103,8 +106,8 @@ export class Sensor {
      */
     #getRoadEdges(road: Road) {
         return [
-        { x1: road.leftBoundary, y1: 0, x2: road.leftBoundary, y2: window.innerHeight },
-        { x1: road.rightBoundary, y1: 0, x2: road.rightBoundary, y2: window.innerHeight },
+            { x1: road.leftBoundary, y1: 0, x2: road.leftBoundary, y2: window.innerHeight },
+            { x1: road.rightBoundary, y1: 0, x2: road.rightBoundary, y2: window.innerHeight },
         ];
     }
     
@@ -113,10 +116,10 @@ export class Sensor {
      */
     #getObstacleEdges(obstacles: Obstacle[]) {
         return obstacles.flatMap((obstacle) => [
-        { x1: obstacle.x - obstacle.width / 2, y1: obstacle.y - obstacle.height / 2, x2: obstacle.x + obstacle.width / 2, y2: obstacle.y - obstacle.height / 2 },
-        { x1: obstacle.x + obstacle.width / 2, y1: obstacle.y - obstacle.height / 2, x2: obstacle.x + obstacle.width / 2, y2: obstacle.y + obstacle.height / 2 },
-        { x1: obstacle.x + obstacle.width / 2, y1: obstacle.y + obstacle.height / 2, x2: obstacle.x - obstacle.width / 2, y2: obstacle.y + obstacle.height / 2 },
-        { x1: obstacle.x - obstacle.width / 2, y1: obstacle.y + obstacle.height / 2, x2: obstacle.x - obstacle.width / 2, y2: obstacle.y - obstacle.height / 2 },
+            { x1: obstacle.x - obstacle.width / 2, y1: obstacle.y - obstacle.height / 2, x2: obstacle.x + obstacle.width / 2, y2: obstacle.y - obstacle.height / 2 },
+            { x1: obstacle.x + obstacle.width / 2, y1: obstacle.y - obstacle.height / 2, x2: obstacle.x + obstacle.width / 2, y2: obstacle.y + obstacle.height / 2 },
+            { x1: obstacle.x + obstacle.width / 2, y1: obstacle.y + obstacle.height / 2, x2: obstacle.x - obstacle.width / 2, y2: obstacle.y + obstacle.height / 2 },
+            { x1: obstacle.x - obstacle.width / 2, y1: obstacle.y + obstacle.height / 2, x2: obstacle.x - obstacle.width / 2, y2: obstacle.y - obstacle.height / 2 },
         ]);
     }
     
@@ -143,22 +146,33 @@ export class Sensor {
   }
 
   /**
-   * Draws the sensor rays on the canvas.
+   * Draws the sensor rays on the canvas with enhanced visualization.
    * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
    */
-  draw(ctx: CanvasRenderingContext2D) {
-    ctx.strokeStyle = "yellow";
-    this.rays.forEach((ray, i) => {
-      ctx.beginPath();
-      ctx.moveTo(ray[0].x, ray[0].y);
+    draw(ctx: CanvasRenderingContext2D) {
+        this.rays.forEach((ray, i) => {
+            ctx.beginPath();
+            ctx.moveTo(ray[0].x, ray[0].y);
 
-      if (this.readings[i]) {
-        ctx.lineTo(this.readings[i].x, this.readings[i].y);
-      } else {
-        ctx.lineTo(ray[1].x, ray[1].y);
-      }
+            if (this.readings[i]) {
+                // Color detected rays green
+                ctx.strokeStyle = "rgba(0, 255, 0, 0.8)";
+                ctx.lineTo(this.readings[i]!.x, this.readings[i]!.y);
 
-      ctx.stroke();
-    });
-  }
+                // Draw circle at intersection point
+                ctx.fillStyle = "red";
+                ctx.beginPath();
+                ctx.arc(this.readings[i]!.x, this.readings[i]!.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                // Use yellow for undetected rays
+                ctx.strokeStyle = "rgba(255, 255, 0, 0.5)";
+                ctx.lineTo(ray[1].x, ray[1].y);
+            }
+
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        });
+    }
+
 }

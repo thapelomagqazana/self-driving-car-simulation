@@ -1,3 +1,6 @@
+import { Road } from "./Road";
+import { Obstacle } from "./Obstacle";
+
 /**
  * Represents a self-driving car with basic physics for movement and steering.
  */
@@ -12,6 +15,8 @@ export class Car {
     friction: number;
     angle: number;
     controls: { left: boolean; right: boolean; up: boolean; down: boolean };
+    resetX: number;
+    resetY: number;
   
     /**
      * Initializes a car object.
@@ -23,6 +28,8 @@ export class Car {
     constructor(x: number, y: number, width: number, height: number) {
       this.x = x;
       this.y = y;
+      this.resetX = x;
+      this.resetY = y
       this.width = width;
       this.height = height;
       this.speed = 0;
@@ -87,9 +94,11 @@ export class Car {
     }
   
     /**
-     * Updates the car's position and angle based on acceleration, steering, and friction.
+     * Updates the car's position and detects collisions.
+     * @param {Road} road - The road object containing boundaries.
+     * @param {Obstacle[]} obstacles - Array of obstacles on the road.
      */
-    update() {
+    update(road: Road, obstacles: Obstacle[]) {
       // Accelerate forward
       if (this.controls.up) {
         this.speed += this.acceleration;
@@ -133,6 +142,40 @@ export class Car {
       // Update position based on angle and speed
       this.x += Math.sin(this.angle) * this.speed;
       this.y -= Math.cos(this.angle) * this.speed;
+
+      // Collision Detection: Check Road Boundaries
+      if (this.x < road.leftBoundary || this.x > road.rightBoundary) {
+          this.reset(); // Reset the car if it goes off the road
+      }
+
+      // Collision Detection: Check Obstacles
+      if (this.#checkObstacleCollision(obstacles)) {
+          this.reset();
+      }
+    }
+
+    /**
+     * Resets the car to its starting position.
+     */
+    reset() {
+        this.x = this.resetX; // Reset to center lane
+        this.y = this.resetY; // Reset to near the bottom of the canvas
+        this.speed = 0;
+        this.angle = 0;
+    }
+    
+    /**
+     * Checks if the car is colliding with an obstacle.
+     * @param {Obstacle[]} obstacles - List of obstacles on the road.
+     * @returns {boolean} - Returns true if a collision occurs.
+     */
+    #checkObstacleCollision(obstacles: Obstacle[]): boolean {
+        return obstacles.some(obstacle =>
+            this.x + this.width / 2 > obstacle.x - obstacle.width / 2 &&
+            this.x - this.width / 2 < obstacle.x + obstacle.width / 2 &&
+            this.y + this.height / 2 > obstacle.y - obstacle.height / 2 &&
+            this.y - this.height / 2 < obstacle.y + obstacle.height / 2
+        );
     }
   
     /**
