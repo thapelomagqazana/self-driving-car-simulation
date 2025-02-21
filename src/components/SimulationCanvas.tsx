@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import Car from "../models/Car";
 import DebugInfo from "./DebugInfo";
+import Road from "../models/Road";
 
 /**
  * SimulationCanvas Component: Renders the simulation and allows toggling AI/manual mode.
@@ -9,6 +10,7 @@ const SimulationCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isAIControlled, setIsAIControlled] = useState(false);
   const [car, setCar] = useState(new Car(200, 500, isAIControlled));
+  const road = new Road(200, 300, 3); // Centered at x=200, width=300px, 3 lanes
 
   // Debugging state
   const [debugInfo, setDebugInfo] = useState({
@@ -37,6 +39,8 @@ const SimulationCanvas = () => {
      */
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      road.draw(ctx); // Draw the road first
       car.update();
       car.draw(ctx);
 
