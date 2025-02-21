@@ -14,16 +14,12 @@ const SimulationCanvas = () => {
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
 
-    /**
-     * Handles key press events.
-     */
+    // Handle key press events
     const handleKeyDown = (event: KeyboardEvent) => {
       car.handleInput(event, true);
     };
 
-    /**
-     * Handles key release events.
-     */
+    // Handle key release events
     const handleKeyUp = (event: KeyboardEvent) => {
       car.handleInput(event, false);
     };
@@ -53,7 +49,7 @@ const SimulationCanvas = () => {
     };
   }, []);
 
-  return <canvas ref={canvasRef} width={400} height={600} className="bg-gray-800" />;
+  return <canvas ref={canvasRef} width={400} height={500} className="bg-gray-800" />;
 };
 
 export default SimulationCanvas;
