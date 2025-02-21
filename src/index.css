@@ -8,7 +8,7 @@
   box-sizing: border-box;
 }
 
-
+/* Apply the background and font styles */
 body {
-  @apply bg-background text-white font-title;
+  @apply bg-background text-primary font-title;
 }

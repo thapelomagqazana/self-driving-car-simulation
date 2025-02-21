@@ -1,6 +1,6 @@
 /**
  * Represents a 2D car entity in the simulation.
- * The car has position, speed, direction, acceleration, friction, and turning capabilities.
+ * The car has position, speed, direction, acceleration, friction, and momentum effects.
  */
 export default class Car {
     x: number; // X-coordinate position of the car
@@ -8,10 +8,13 @@ export default class Car {
     speed: number; // Current speed of the car
     angle: number; // Orientation of the car in radians
     steering: number; // Steering force (positive for right, negative for left)
-    acceleration: number; // Rate at which the car accelerates
-    maxSpeed: number; // Maximum allowed speed for the car
-    friction: number; // Friction to gradually slow down the car
-    turningRate: number; // How fast the car turns based on steering input
+    acceleration: number; // Acceleration rate
+    maxSpeed: number; // Maximum speed limit
+    maxReverseSpeed: number; // Maximum speed in reverse
+    friction: number; // Friction for slowing down
+    brakingPower: number; // Intensity of braking
+    turningRate: number; // Steering sensitivity
+    controls: { forward: boolean; brake: boolean; left: boolean; right: boolean }; // Stores active keys
   
     /**
      * Constructs a new Car instance.
@@ -25,28 +28,92 @@ export default class Car {
       this.angle = 0;
       this.steering = 0;
       this.acceleration = 0.2; // Acceleration rate
-      this.maxSpeed = 5; // Maximum speed limit
-      this.friction = 0.05; // Slowdown rate when no acceleration
+      this.maxSpeed = 5; // Maximum forward speed
+      this.maxReverseSpeed = -2; // Maximum reverse speed
+      this.friction = 0.05; // Gradual slowdown when no input
+      this.brakingPower = 0.3; // Hard braking intensity
       this.turningRate = 0.03; // Steering sensitivity
+      this.controls = { forward: false, brake: false, left: false, right: false }; // Key states
     }
   
     /**
-     * Updates the car's movement by applying acceleration, friction, and steering.
-     * The car's new position is computed based on its speed and angle.
+     * Handles keyboard input events.
+     * @param event - The keyboard event.
+     * @param isKeyDown - Whether the key is pressed or released.
+     */
+    handleInput(event: KeyboardEvent, isKeyDown: boolean) {
+      switch (event.key) {
+        case "ArrowUp":
+        case "w":
+          this.controls.forward = isKeyDown;
+          break;
+        case "ArrowDown":
+        case "s":
+          this.controls.brake = isKeyDown;
+          break;
+        case "ArrowLeft":
+        case "a":
+          this.controls.left = isKeyDown;
+          break;
+        case "ArrowRight":
+        case "d":
+          this.controls.right = isKeyDown;
+          break;
+      }
+    }
+  
+    /**
+     * Updates the car's movement based on input, friction, and momentum.
      */
     update() {
-      // Apply acceleration
-      this.speed += this.acceleration;
-      if (this.speed > this.maxSpeed) this.speed = this.maxSpeed;
+      // Apply acceleration if forward key is pressed
+      if (this.controls.forward) {
+        this.speed += this.acceleration;
+      }
   
-      // Apply friction to gradually slow down the car
-      if (this.speed > 0) this.speed -= this.friction;
-      if (this.speed < 0) this.speed = 0; // Prevent reversing when friction is high
+      // Apply braking logic
+      if (this.controls.brake) {
+        if (this.speed > 0) {
+          this.speed -= this.brakingPower; // Quick stop when moving forward
+        } else {
+          this.speed -= this.acceleration; // Slow reversing if at zero speed
+        }
+      }
   
-      // Update the car's direction based on steering input
-      this.angle += this.steering * this.turningRate;
+      // Implement reverse driving mechanics
+      if (this.controls.brake && this.speed <= 0) {
+        this.speed -= this.acceleration; // Reverse acceleration
+        if (this.speed < this.maxReverseSpeed) {
+          this.speed = this.maxReverseSpeed; // Limit reverse speed
+        }
+      }
   
-      // Calculate new position based on movement direction
+      // Apply friction (gradual slowdown)
+      if (!this.controls.forward && !this.controls.brake) {
+        if (this.speed > 0) {
+          this.speed -= this.friction;
+          if (this.speed < 0) this.speed = 0;
+        } else if (this.speed < 0) {
+          this.speed += this.friction;
+          if (this.speed > 0) this.speed = 0;
+        }
+      }
+  
+      // Steering logic
+      if (this.controls.left) {
+        this.steering = -1;
+      } else if (this.controls.right) {
+        this.steering = 1;
+      } else {
+        this.steering = 0;
+      }
+  
+      // Update car direction and apply turning effect
+      if (Math.abs(this.speed) > 0.2) {
+        this.angle += this.steering * this.turningRate * (this.speed / this.maxSpeed);
+      }
+  
+      // Update car position based on speed and angle
       this.x += Math.sin(this.angle) * this.speed;
       this.y -= Math.cos(this.angle) * this.speed;
     }
@@ -56,17 +123,15 @@ export default class Car {
      * @param ctx - The 2D rendering context of the canvas.
      */
     draw(ctx: CanvasRenderingContext2D) {
-      ctx.save(); // Save the current state of the canvas
-  
-      // Move and rotate the canvas according to the car's position and angle
+      ctx.save();
       ctx.translate(this.x, this.y);
       ctx.rotate(this.angle);
   
       // Draw the car body
-      ctx.fillStyle = "#00ADB5"; // Car color
+      ctx.fillStyle = "#00ADB5";
       ctx.fillRect(-15, -25, 30, 50); // Centered rectangle representing the car
   
-      ctx.restore(); // Restore the canvas state
+      ctx.restore();
     }
   }
   
