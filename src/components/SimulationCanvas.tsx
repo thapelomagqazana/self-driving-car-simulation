@@ -9,8 +9,8 @@ import Road from "../models/Road";
 const SimulationCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isAIControlled, setIsAIControlled] = useState(false);
-  const [car, setCar] = useState(new Car(200, 500, isAIControlled));
   const road = new Road(200, 300, 3); // Centered at x=200, width=300px, 3 lanes
+  const [car, setCar] = useState(new Car(road.getLaneCenter(1), 500, road, isAIControlled));
 
   // Debugging state
   const [debugInfo, setDebugInfo] = useState({
@@ -21,7 +21,7 @@ const SimulationCanvas = () => {
   });
 
   useEffect(() => {
-    setCar(new Car(200, 500, isAIControlled)); // Reset car on mode change
+    setCar(new Car(road.getLaneCenter(1), 500, road, isAIControlled)); // Reset car on mode change
   }, [isAIControlled]);
 
   useEffect(() => {

@@ -1,3 +1,5 @@
+import Road from "./Road";
+
 export default class Car {
     x: number;
     y: number;
@@ -14,10 +16,12 @@ export default class Car {
     slipFactor: number;
     isAIControlled: boolean; // New property to switch between manual and AI mode
     controls: { forward: boolean; brake: boolean; left: boolean; right: boolean };
+    road: Road;
   
-    constructor(x: number, y: number, isAIControlled: boolean = false) {
+    constructor(x: number, y: number, road: Road, isAIControlled: boolean = false) {
       this.x = x;
       this.y = y;
+      this.road = road;
       this.speed = 0;
       this.angle = 0;
       this.steering = 0;
@@ -117,6 +121,16 @@ export default class Car {
       // Update Car Position
       this.x += Math.sin(this.angle) * this.speed;
       this.y -= Math.cos(this.angle) * this.speed;
+
+      // Apply Road Boundary Constraints
+      if (this.x < this.road.leftBoundary) {
+          this.x = this.road.leftBoundary;
+          this.speed *= 0.8; // Reduce speed slightly when hitting the boundary
+      }
+      if (this.x > this.road.rightBoundary) {
+          this.x = this.road.rightBoundary;
+          this.speed *= 0.8;
+      }
     }
   
     /**
