@@ -50,9 +50,9 @@ const App = () => {
   }, []);
 
   return (
-    <div className="flex flex-col items-center mt-10">
-      <h1 className="text-2xl font-bold text-blue-600">🚗 Self-Driving Car Simulation</h1>
-      <canvas ref={canvasRef} className="border-2 border-gray-800 mt-5"></canvas>
+    <div className="h-screen flex flex-col items-center justify-center">
+      <h1 className="text-primary text-4xl font-title tracking-widest">🚗 Self-Driving Car Simulation</h1>
+      <canvas ref={canvasRef} className="border-4 border-secondary mt-5 rounded-lg shadow-lg"></canvas>
     </div>
   );
 };
