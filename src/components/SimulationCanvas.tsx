@@ -12,11 +12,11 @@ const SimulationCanvas = () => {
   const road = new Road(200, 300, 3);
   const [car, setCar] = useState(new Car(road.getLaneCenter(1), 500, road, isAIControlled));
 
-  // Add traffic cars (later, we can make them move)
+  // Add traffic cars
   const traffic: Car[] = [
-    new Car(road.getLaneCenter(0), 200, road, true), // Static traffic car in left lane
+    new Car(road.getLaneCenter(0), 200, road, true),
     new Car(road.getLaneCenter(1), 300, road, true),
-    new Car(road.getLaneCenter(2), 400, road, true)  // Static traffic car in right lane
+    new Car(road.getLaneCenter(2), 400, road, true)
   ];
 
   const [debugInfo, setDebugInfo] = useState({
@@ -25,6 +25,7 @@ const SimulationCanvas = () => {
     speed: car.speed,
     angle: car.angle,
     roadInfo: road.getDebugInfo(),
+    sensorReadings: car.sensor.smoothReadings, // Track sensor readings
   });
 
   useEffect(() => {
@@ -55,7 +56,7 @@ const SimulationCanvas = () => {
       ctx.save();
       ctx.translate(0, cameraY);
 
-      // **Optimize Road Rendering**
+      // **Draw Road**
       road.updateScroll(car.y);
       road.draw(ctx, canvasHeight);
 
@@ -64,19 +65,20 @@ const SimulationCanvas = () => {
         trafficCar.draw(ctx);
       }
 
-      // Update & Draw Car
+      // **Update & Draw Player Car**
       car.update(traffic);
       car.draw(ctx);
 
       ctx.restore();
 
-      // Update Debug Info
+      // **Update Debug Info**
       setDebugInfo({
         x: car.x,
         y: car.y,
         speed: car.speed,
         angle: car.angle,
         roadInfo: road.getDebugInfo(),
+        sensorReadings: car.sensor.smoothReadings, // Update sensor values in UI
       });
 
       animationFrameId = requestAnimationFrame(animate);
@@ -102,6 +104,7 @@ const SimulationCanvas = () => {
           angle={debugInfo.angle * (180 / Math.PI)} 
           isAIControlled={isAIControlled} 
           roadInfo={debugInfo.roadInfo}
+          sensorReadings={debugInfo.sensorReadings} // Pass sensor data to UI
         />
       </div>
 

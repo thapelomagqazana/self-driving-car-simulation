@@ -150,18 +150,27 @@ export default class Sensor {
     }
 
     /**
-     * Draws sensor rays with colors indicating obstacle detection.
+     * Draws sensor rays with visual markers.
      */
     draw(ctx: CanvasRenderingContext2D) {
         for (let i = 0; i < this.rays.length; i++) {
             const ray = this.rays[i];
-            ctx.strokeStyle = this.smoothReadings[i] < 1 ? "red" : "green"; // Use smoothed values
+            const detected = this.smoothReadings[i] < 1;
+            
+            ctx.strokeStyle = detected ? "red" : "green";
             ctx.lineWidth = 2;
-
             ctx.beginPath();
             ctx.moveTo(ray.start.x, ray.start.y);
             ctx.lineTo(ray.end.x, ray.end.y);
             ctx.stroke();
+
+            // Highlight detected obstacles
+            if (detected) {
+                ctx.fillStyle = "yellow";
+                ctx.beginPath();
+                ctx.arc(ray.end.x, ray.end.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
     }
 }
