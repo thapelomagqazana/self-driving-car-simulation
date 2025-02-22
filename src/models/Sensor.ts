@@ -28,32 +28,37 @@ export default class Sensor {
      * @param road - The road instance.
      * @param traffic - Array of traffic cars.
      */
+    private lastUpdateTime = 0;
+
     update(road: Road, traffic: Car[]) {
+        const now = performance.now();
+        if (now - this.lastUpdateTime < 50) return; // Limit updates (e.g., every 50ms)
+        this.lastUpdateTime = now;
+    
         this.rays = [];
         const newReadings: number[] = [];
-
+    
         for (let i = 0; i < this.rayCount; i++) {
             const rayAngle = this.car.angle - this.raySpread / 2 + (i / (this.rayCount - 1)) * this.raySpread;
-            const startX = this.car.x;
-            const startY = this.car.y;
-            const endX = startX + Math.sin(rayAngle) * this.rayLength;
-            const endY = startY - Math.cos(rayAngle) * this.rayLength;
-
-            const ray = { start: { x: startX, y: startY }, end: { x: endX, y: endY } };
+            const endX = this.car.x + Math.sin(rayAngle) * this.rayLength;
+            const endY = this.car.y - Math.cos(rayAngle) * this.rayLength;
+    
+            const ray = { start: { x: this.car.x, y: this.car.y }, end: { x: endX, y: endY } };
             this.rays.push(ray);
-
-            // **Detect obstacles and normalize distance**
+    
+            // **Detect obstacles**
             const intersection = this.getClosestIntersection(ray, road, traffic);
-            const distance = intersection ? Math.hypot(ray.start.x - intersection.x, ray.start.y - intersection.y) : this.rayLength;
-            newReadings.push(distance / this.rayLength); // Normalize distance between 0 and 1
+            const distance = Math.hypot(ray.start.x - intersection.x, ray.start.y - intersection.y);
+            newReadings.push(distance / this.rayLength); // Normalize
         }
-
-        // **Smooth sensor readings to avoid flickering**
-        this.readings = newReadings;
+    
+        // **Smooth data updates**
         this.smoothReadings = this.smoothReadings.map((prev, i) =>
             prev * (1 - this.smoothingFactor) + newReadings[i] * this.smoothingFactor
         );
     }
+    
+    
 
     /**
      * Finds the closest intersection point of the sensor ray with road boundaries and traffic.
@@ -153,24 +158,33 @@ export default class Sensor {
      * Draws sensor rays with visual markers.
      */
     draw(ctx: CanvasRenderingContext2D) {
+        ctx.save();
+    
+        // **Use a single loop with conditional rendering**
         for (let i = 0; i < this.rays.length; i++) {
-            const ray = this.rays[i];
+            if (this.smoothReadings[i] === 1) continue; // Skip if sensor detects nothing
+
             const detected = this.smoothReadings[i] < 1;
-            
+    
+            const ray = this.rays[i];
             ctx.strokeStyle = detected ? "red" : "green";
             ctx.lineWidth = 2;
+    
             ctx.beginPath();
             ctx.moveTo(ray.start.x, ray.start.y);
             ctx.lineTo(ray.end.x, ray.end.y);
             ctx.stroke();
-
-            // Highlight detected obstacles
-            if (detected) {
+    
+            // Draw detection points only when obstacles are found
+            if (this.smoothReadings[i] < 1) {
                 ctx.fillStyle = "yellow";
                 ctx.beginPath();
                 ctx.arc(ray.end.x, ray.end.y, 5, 0, Math.PI * 2);
                 ctx.fill();
             }
         }
+    
+        ctx.restore();
     }
+    
 }

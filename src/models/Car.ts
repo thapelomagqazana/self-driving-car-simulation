@@ -128,13 +128,17 @@ export default class Car {
     }
 
     /**
-    * Applies friction to slow down the car when no input is given.
-    */
+     * Applies friction to slow down the car when no input is given.
+     */
     private applyFriction() {
       if (this.controls.forward || this.controls.brake) return;
 
       this.speed += this.speed > 0 ? -this.friction : this.friction;
-      if (Math.abs(this.speed) < this.friction) this.speed = 0;
+
+      // **Prevent Floating-Point Drift**
+      if (Math.abs(this.speed) < 0.02) {
+          this.speed = 0;
+      }
     }
 
     /**
@@ -148,19 +152,27 @@ export default class Car {
     }
 
     /**
-    * Adjusts steering direction based on user input.
-    */
+     * Adjusts steering direction based on user input.
+     */
     private adjustSteering() {
-      this.steering = this.controls.left ? -1 : this.controls.right ? 1 : 0;
+      if (!this.controls.left && !this.controls.right) {
+          this.steering = 0; // **Prevent small angle changes**
+      } else {
+          this.steering = this.controls.left ? -1 : 1;
+      }
     }
 
+
     /**
-    * Updates the car's position based on its speed and angle.
-    */
+     * Updates the car's position based on its speed and angle.
+     */
     private updatePosition() {
+      if (Math.abs(this.speed) <= 0.05) return; // **Stop unnecessary updates**
+      
       this.x += Math.sin(this.angle) * this.speed;
       this.y -= Math.cos(this.angle) * this.speed;
     }
+
 
     /**
     * Ensures the car stays within the road boundaries.
