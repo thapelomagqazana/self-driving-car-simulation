@@ -4,15 +4,14 @@ import Road from "../models/Road";
 import DebugInfo from "./DebugInfo";
 
 /**
- * SimulationCanvas Component: Handles rendering the simulation and camera movement.
+ * SimulationCanvas Component: Optimized for performance.
  */
 const SimulationCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isAIControlled, setIsAIControlled] = useState(false);
-  const road = new Road(200, 300, 3); 
+  const road = new Road(200, 300, 3);
   const [car, setCar] = useState(new Car(road.getLaneCenter(1), 500, road, isAIControlled));
 
-  // Debugging state
   const [debugInfo, setDebugInfo] = useState({
     x: car.x,
     y: car.y,
@@ -21,13 +20,14 @@ const SimulationCanvas = () => {
   });
 
   useEffect(() => {
-    setCar(new Car(road.getLaneCenter(1), 500, road, isAIControlled)); 
+    setCar(new Car(road.getLaneCenter(1), 500, road, isAIControlled));
   }, [isAIControlled]);
 
   useEffect(() => {
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
     const canvasHeight = canvas.height;
+    let animationFrameId: number;
 
     const handleKeyDown = (event: KeyboardEvent) => car.handleInput(event, true);
     const handleKeyUp = (event: KeyboardEvent) => car.handleInput(event, false);
@@ -36,28 +36,28 @@ const SimulationCanvas = () => {
     window.addEventListener("keyup", handleKeyUp);
 
     /**
-     * Animation loop to update and draw the scene.
+     * Optimized Animation Loop
      */
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Smooth Camera Follow
-      const cameraY = -car.y + canvasHeight * 0.7; 
+      // Optimize camera movement
+      const cameraY = -car.y + canvasHeight * 0.7;
 
       ctx.save();
       ctx.translate(0, cameraY);
 
-      // Draw road and update scrolling
+      // **Optimize Road Rendering**
       road.updateScroll(car.y);
       road.draw(ctx, canvasHeight);
 
-      // Update and draw car
+      // Update & Draw Car
       car.update();
       car.draw(ctx);
 
       ctx.restore();
 
-      // Update debug state dynamically
+      // Update Debug Info
       setDebugInfo({
         x: car.x,
         y: car.y,
@@ -65,12 +65,13 @@ const SimulationCanvas = () => {
         angle: car.angle,
       });
 
-      requestAnimationFrame(animate);
+      animationFrameId = requestAnimationFrame(animate);
     };
 
     animate();
 
     return () => {
+      window.cancelAnimationFrame(animationFrameId);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
