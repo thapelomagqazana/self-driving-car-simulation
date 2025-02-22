@@ -7,23 +7,30 @@ export default class Sensor {
     rayLength: number; // Maximum detection range
     raySpread: number; // Angle spread of the rays
     rays: { start: { x: number; y: number }, end: { x: number; y: number } }[]; // Array of sensor rays
-    readings: { x: number; y: number }[]; // Stores detected intersection points
+    // readings: { x: number; y: number }[]; // Stores detected intersection points
+    readings: number[]; // Stores normalized distances
+    smoothReadings: number[]; // Stores smoothed readings to avoid flickering
+    smoothingFactor: number; // Controls how smoothly data updates
 
-    constructor(car: Car, rayCount = 5, rayLength = 150, raySpread = Math.PI / 2) {
+    constructor(car: Car, rayCount = 5, rayLength = 150, raySpread = Math.PI / 2, smoothingFactor = 0.2) {
         this.car = car;
         this.rayCount = rayCount;
         this.rayLength = rayLength;
         this.raySpread = raySpread;
         this.rays = [];
-        this.readings = [];
+        this.readings = new Array(rayCount).fill(1); // Default: No obstacles detected
+        this.smoothReadings = new Array(rayCount).fill(1);
+        this.smoothingFactor = smoothingFactor;
     }
 
     /**
-     * Updates the sensor rays based on the car's position and angle.
+     * Updates sensor data by detecting intersections.
+     * @param road - The road instance.
+     * @param traffic - Array of traffic cars.
      */
     update(road: Road, traffic: Car[]) {
         this.rays = [];
-        this.readings = [];
+        const newReadings: number[] = [];
 
         for (let i = 0; i < this.rayCount; i++) {
             const rayAngle = this.car.angle - this.raySpread / 2 + (i / (this.rayCount - 1)) * this.raySpread;
@@ -35,10 +42,17 @@ export default class Sensor {
             const ray = { start: { x: startX, y: startY }, end: { x: endX, y: endY } };
             this.rays.push(ray);
 
-            // Get closest intersection point with road boundaries and traffic
+            // **Detect obstacles and normalize distance**
             const intersection = this.getClosestIntersection(ray, road, traffic);
-            this.readings.push(intersection);
+            const distance = intersection ? Math.hypot(ray.start.x - intersection.x, ray.start.y - intersection.y) : this.rayLength;
+            newReadings.push(distance / this.rayLength); // Normalize distance between 0 and 1
         }
+
+        // **Smooth sensor readings to avoid flickering**
+        this.readings = newReadings;
+        this.smoothReadings = this.smoothReadings.map((prev, i) =>
+            prev * (1 - this.smoothingFactor) + newReadings[i] * this.smoothingFactor
+        );
     }
 
     /**
@@ -136,18 +150,17 @@ export default class Sensor {
     }
 
     /**
-     * Draws sensor rays, changing color when detecting an obstacle.
+     * Draws sensor rays with colors indicating obstacle detection.
      */
     draw(ctx: CanvasRenderingContext2D) {
         for (let i = 0; i < this.rays.length; i++) {
             const ray = this.rays[i];
-            const intersection = this.readings[i];
+            ctx.strokeStyle = this.smoothReadings[i] < 1 ? "red" : "green"; // Use smoothed values
+            ctx.lineWidth = 2;
 
             ctx.beginPath();
             ctx.moveTo(ray.start.x, ray.start.y);
-            ctx.lineTo(intersection.x, intersection.y);
-            ctx.strokeStyle = intersection.x === ray.end.x && intersection.y === ray.end.y ? "green" : "red"; // Green = No obstacle, Red = Obstacle
-            ctx.lineWidth = 2;
+            ctx.lineTo(ray.end.x, ray.end.y);
             ctx.stroke();
         }
     }

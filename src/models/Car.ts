@@ -67,12 +67,29 @@ export default class Car {
           break;
       }
     }
+
+    /**
+     * Simple AI decision-making based on sensor input.
+     */
+    private makeAIDecision() {
+      const inputs = this.sensor.smoothReadings;
+    
+      if (inputs.length === 0) return;
+  
+      // Basic AI logic: turn if an obstacle is detected within 30% range
+      if (inputs[3] < 0.5) {
+          this.angle += 0.1; // Turn away from obstacle
+          this.speed += this.acceleration;
+      }
+    }
   
     /**
      * Updates the car's movement based on mode (manual or AI).
      */
     update(traffic: Car[]) {
-      if (this.isAIControlled) return;
+      if (this.isAIControlled) {
+        this.makeAIDecision();
+      }
 
       this.applyAcceleration();
       this.applyBraking();
@@ -159,7 +176,6 @@ export default class Car {
       }
     }
 
-  
     /**
      * Draws the car onto the canvas.
      * @param ctx - The 2D rendering context of the canvas.
@@ -168,11 +184,15 @@ export default class Car {
       ctx.save();
       ctx.translate(this.x, this.y);
       ctx.rotate(this.angle);
-      ctx.fillStyle = "#00ADB5";
+
+      // Set car color based on whether it's AI-controlled (static traffic)
+      ctx.fillStyle = this.isAIControlled ? "#FF0000" : "#00ADB5"; // Red for static cars, Blue for player car
+
       ctx.fillRect(-15, -25, 30, 50);
       ctx.restore();
 
       this.sensor.draw(ctx); // Draw sensors
     }
+
 }
   

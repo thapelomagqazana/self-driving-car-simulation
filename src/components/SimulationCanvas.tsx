@@ -15,6 +15,7 @@ const SimulationCanvas = () => {
   // Add traffic cars (later, we can make them move)
   const traffic: Car[] = [
     new Car(road.getLaneCenter(0), 200, road, true), // Static traffic car in left lane
+    new Car(road.getLaneCenter(1), 300, road, true),
     new Car(road.getLaneCenter(2), 400, road, true)  // Static traffic car in right lane
   ];
 
@@ -57,6 +58,11 @@ const SimulationCanvas = () => {
       // **Optimize Road Rendering**
       road.updateScroll(car.y);
       road.draw(ctx, canvasHeight);
+
+      // **Draw Traffic Cars**
+      for (const trafficCar of traffic) {
+        trafficCar.draw(ctx);
+      }
 
       // Update & Draw Car
       car.update(traffic);
