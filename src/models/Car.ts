@@ -37,7 +37,7 @@ export default class Car {
       this.slipFactor = 0.1;
       this.isAIControlled = isAIControlled; // Determines if the car should be AI-driven
       this.controls = { forward: false, brake: false, left: false, right: false };
-      this.sensor = new Sensor(this, 5, 150, Math.PI / 2);
+      this.sensor = new Sensor(this, 7, 150, Math.PI / 2);
     }
   
     /**
@@ -71,72 +71,94 @@ export default class Car {
     /**
      * Updates the car's movement based on mode (manual or AI).
      */
-    update() {
-      if (this.isAIControlled) {
-        // AI movement logic will be implemented later
-        return;
-      }
-  
-      // Apply Acceleration
+    update(traffic: Car[]) {
+      if (this.isAIControlled) return;
+
+      this.applyAcceleration();
+      this.applyBraking();
+      this.limitSpeed();
+      this.applyFriction();
+      this.simulateDrift();
+      this.adjustSteering();
+      this.updatePosition();
+      this.enforceRoadBoundaries();
+      this.sensor.update(this.road, traffic);
+    }
+
+    /**
+    * Handles car acceleration.
+    */
+    private applyAcceleration() {
       if (this.controls.forward) {
-        this.speed += this.acceleration;
+          this.speed += this.acceleration;
       }
-  
-      // Apply Braking
-      if (this.controls.brake) {
-        if (this.speed > 0) {
-          this.speed -= this.brakingPower;
-        } else {
-          this.speed -= this.acceleration;
-        }
-      }
-  
-      // Limit Speed
-      if (this.speed > this.maxSpeed) this.speed = this.maxSpeed;
-      if (this.speed < this.maxReverseSpeed) this.speed = this.maxReverseSpeed;
-  
-      // Apply Friction
-      if (!this.controls.forward && !this.controls.brake) {
-        if (this.speed > 0) {
-          this.speed -= this.friction;
-          if (this.speed < 0) this.speed = 0;
-        } else if (this.speed < 0) {
-          this.speed += this.friction;
-          if (this.speed > 0) this.speed = 0;
-        }
-      }
-  
-      // Simulate Drift/Slippage
-      if (Math.abs(this.speed) > 0.1) {
-        const driftEffect = this.slipFactor * (1 - this.gripLevel);
-        this.angle += this.steering * (this.turningRate + driftEffect) * (this.speed / this.maxSpeed);
-      }
-  
-      // Adjust Steering
-      if (this.controls.left) {
-        this.steering = -1;
-      } else if (this.controls.right) {
-        this.steering = 1;
-      } else {
-        this.steering = 0;
-      }
-  
-      // Update Car Position
+    }
+
+    /**
+    * Handles car braking.
+    */
+    private applyBraking() {
+      if (!this.controls.brake) return;
+
+      this.speed -= this.speed > 0 ? this.brakingPower : this.acceleration;
+    }
+
+    /**
+    * Limits car speed to max forward and reverse speeds.
+    */
+    private limitSpeed() {
+      this.speed = Math.max(this.maxReverseSpeed, Math.min(this.speed, this.maxSpeed));
+    }
+
+    /**
+    * Applies friction to slow down the car when no input is given.
+    */
+    private applyFriction() {
+      if (this.controls.forward || this.controls.brake) return;
+
+      this.speed += this.speed > 0 ? -this.friction : this.friction;
+      if (Math.abs(this.speed) < this.friction) this.speed = 0;
+    }
+
+    /**
+    * Simulates drift and slippage based on grip level.
+    */
+    private simulateDrift() {
+      if (Math.abs(this.speed) <= 0.1) return;
+
+      const driftEffect = this.slipFactor * (1 - this.gripLevel);
+      this.angle += this.steering * (this.turningRate + driftEffect) * (this.speed / this.maxSpeed);
+    }
+
+    /**
+    * Adjusts steering direction based on user input.
+    */
+    private adjustSteering() {
+      this.steering = this.controls.left ? -1 : this.controls.right ? 1 : 0;
+    }
+
+    /**
+    * Updates the car's position based on its speed and angle.
+    */
+    private updatePosition() {
       this.x += Math.sin(this.angle) * this.speed;
       this.y -= Math.cos(this.angle) * this.speed;
+    }
 
-      // Apply Road Boundary Constraints
+    /**
+    * Ensures the car stays within the road boundaries.
+    */
+    private enforceRoadBoundaries() {
       if (this.x < this.road.leftBoundary) {
           this.x = this.road.leftBoundary;
-          this.speed *= 0.8; // Reduce speed slightly when hitting the boundary
+          this.speed *= 0.8;
       }
       if (this.x > this.road.rightBoundary) {
           this.x = this.road.rightBoundary;
           this.speed *= 0.8;
       }
-
-      this.sensor.update(); // Update sensor positions
     }
+
   
     /**
      * Draws the car onto the canvas.

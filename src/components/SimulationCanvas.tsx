@@ -12,6 +12,12 @@ const SimulationCanvas = () => {
   const road = new Road(200, 300, 3);
   const [car, setCar] = useState(new Car(road.getLaneCenter(1), 500, road, isAIControlled));
 
+  // Add traffic cars (later, we can make them move)
+  const traffic: Car[] = [
+    new Car(road.getLaneCenter(0), 200, road, true), // Static traffic car in left lane
+    new Car(road.getLaneCenter(2), 400, road, true)  // Static traffic car in right lane
+  ];
+
   const [debugInfo, setDebugInfo] = useState({
     x: car.x,
     y: car.y,
@@ -53,7 +59,7 @@ const SimulationCanvas = () => {
       road.draw(ctx, canvasHeight);
 
       // Update & Draw Car
-      car.update();
+      car.update(traffic);
       car.draw(ctx);
 
       ctx.restore();
