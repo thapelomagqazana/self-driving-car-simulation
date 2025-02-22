@@ -21,7 +21,7 @@ export default class Road {
 
         // **Initialize Road Segments for Smooth Recycling**
         this.segments = [];
-        for (let i = 0; i < 15; i++) { // Keep extra segments for recycling
+        for (let i = 0; i < 20; i++) { // Keep extra segments for recycling
             this.segments.push(i * this.segmentLength);
         }
     }
@@ -32,6 +32,8 @@ export default class Road {
     getLaneCenter(laneIndex: number): number {
         return this.leftBoundary + (laneIndex + 0.5) * this.laneWidth;
     }
+
+
 
     /**
      * Recycles old road segments to maintain infinite scrolling.
@@ -44,6 +46,24 @@ export default class Road {
             this.segments.push(this.segments[this.segments.length - 1] + this.segmentLength);
             this.segments.shift(); // Remove the top segment
         }
+    }
+
+    /**
+     * Returns the center X positions of all lanes.
+     */
+    getLaneCenters(): number[] {
+        return Array.from({ length: this.laneCount }, (_, i) => this.leftBoundary + (i + 0.5) * this.laneWidth);
+    }
+
+    /**
+     * Debugging: Get road info for display.
+     */
+       getDebugInfo() {
+        return {
+            lanePositions: this.getLaneCenters(),
+            leftBoundary: this.leftBoundary,
+            rightBoundary: this.rightBoundary,
+        };
     }
 
     /**

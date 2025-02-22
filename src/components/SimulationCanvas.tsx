@@ -17,6 +17,7 @@ const SimulationCanvas = () => {
     y: car.y,
     speed: car.speed,
     angle: car.angle,
+    roadInfo: road.getDebugInfo(),
   });
 
   useEffect(() => {
@@ -63,6 +64,7 @@ const SimulationCanvas = () => {
         y: car.y,
         speed: car.speed,
         angle: car.angle,
+        roadInfo: road.getDebugInfo(),
       });
 
       animationFrameId = requestAnimationFrame(animate);
@@ -78,25 +80,31 @@ const SimulationCanvas = () => {
   }, [car]);
 
   return (
-    <div className="relative flex flex-col items-center">
-      <canvas ref={canvasRef} width={400} height={500} className="bg-gray-800" />
+    <div className="flex items-start justify-center w-full h-screen p-4">
+      {/* Debug Info Panel (Left Side) */}
+      <div className="mr-4">
+        <DebugInfo 
+          x={debugInfo.x} 
+          y={debugInfo.y} 
+          speed={debugInfo.speed} 
+          angle={debugInfo.angle * (180 / Math.PI)} 
+          isAIControlled={isAIControlled} 
+          roadInfo={debugInfo.roadInfo}
+        />
+      </div>
 
-      {/* Debug Info Panel */}
-      <DebugInfo 
-        x={debugInfo.x} 
-        y={debugInfo.y} 
-        speed={debugInfo.speed} 
-        angle={debugInfo.angle * (180 / Math.PI)} 
-        isAIControlled={isAIControlled} 
-      />
+      {/* Simulation Canvas */}
+      <div className="relative flex flex-col items-center">
+        <canvas ref={canvasRef} width={400} height={450} className="bg-gray-800" />
 
-      {/* Toggle AI/Manual Mode */}
-      <button
-        onClick={() => setIsAIControlled(!isAIControlled)}
-        className="mt-4 p-2 bg-blue-500 text-white rounded"
-      >
-        {isAIControlled ? "Switch to Manual Mode" : "Switch to AI Mode"}
-      </button>
+        {/* Toggle AI/Manual Mode */}
+        <button
+          onClick={() => setIsAIControlled(!isAIControlled)}
+          className="mt-4 p-2 bg-blue-500 text-white rounded"
+        >
+          {isAIControlled ? "Switch to Manual Mode" : "Switch to AI Mode"}
+        </button>
+      </div>
     </div>
   );
 };

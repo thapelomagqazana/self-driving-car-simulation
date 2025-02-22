@@ -1,4 +1,5 @@
 import Road from "./Road";
+import Sensor from "./Sensor";
 
 export default class Car {
     x: number;
@@ -17,6 +18,7 @@ export default class Car {
     isAIControlled: boolean; // New property to switch between manual and AI mode
     controls: { forward: boolean; brake: boolean; left: boolean; right: boolean };
     road: Road;
+    sensor: Sensor;
   
     constructor(x: number, y: number, road: Road, isAIControlled: boolean = false) {
       this.x = x;
@@ -35,6 +37,7 @@ export default class Car {
       this.slipFactor = 0.1;
       this.isAIControlled = isAIControlled; // Determines if the car should be AI-driven
       this.controls = { forward: false, brake: false, left: false, right: false };
+      this.sensor = new Sensor(this, 5, 150, Math.PI / 2);
     }
   
     /**
@@ -131,6 +134,8 @@ export default class Car {
           this.x = this.road.rightBoundary;
           this.speed *= 0.8;
       }
+
+      this.sensor.update(); // Update sensor positions
     }
   
     /**
@@ -144,6 +149,8 @@ export default class Car {
       ctx.fillStyle = "#00ADB5";
       ctx.fillRect(-15, -25, 30, 50);
       ctx.restore();
+
+      this.sensor.draw(ctx); // Draw sensors
     }
 }
   
