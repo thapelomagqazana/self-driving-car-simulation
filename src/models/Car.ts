@@ -75,20 +75,46 @@ export default class Car {
     }
 
     /**
-     * Simple AI decision-making based on sensor input.
+     * AI Evasive Maneuvers Based on Sensor Readings
      */
     private makeAIDecision() {
       const inputs = this.sensor.smoothReadings;
-    
-      if (inputs.length === 0) return;
-  
-      // Basic AI logic: turn if an obstacle is detected within 30% range
-      if (inputs[3] < 0.5) {
-          this.angle += 0.1; // Turn away from obstacle
+
+      if (inputs.length === 0) return; // No sensor data available
+
+      // **Threshold for obstacle detection (less than 40% of sensor range)**
+      const dangerThreshold = 0.4;
+
+      // **Get the left, center, and right sensor readings**
+      const left = inputs[0];
+      const midLeft = inputs[2];
+      const midRight = inputs[4];
+      const right = inputs[6];
+
+      // **Find the safest direction based on sensor data**
+      let turnDirection = 0; // Default: Go straight
+
+      if (midLeft < dangerThreshold || left < dangerThreshold) {
+          turnDirection = 1; // Steer right
+      } 
+      else if (midRight < dangerThreshold || right < dangerThreshold) {
+          turnDirection = -1; // Steer left
       }
 
-      this.speed += 0.1;
+      // **Apply steering changes smoothly**
+      this.steering = turnDirection * 0.7; // Adjust steering sensitivity
+
+      // **Adjust speed dynamically**
+      if (inputs[3] < dangerThreshold) {
+          this.speed -= this.brakingPower; // Slow down if directly in danger
+      } else {
+          this.speed += this.acceleration * 0.5; // Resume speed when clear
+      }
+
+      // **Ensure speed remains within limits**
+      this.limitSpeed();
     }
+
   
     /**
      * Updates the car's movement based on mode (manual or AI).
