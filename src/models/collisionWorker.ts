@@ -1,3 +1,10 @@
+interface CollisionObject {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
 self.onmessage = function (event) {
     const { car, traffic, staticObstacles } = event.data;
     const detectedCollision = checkCollision(car, traffic, staticObstacles);
@@ -20,7 +27,7 @@ function checkCollision(
     }
 
     // **Use bounding box check for efficiency**
-    const detectCollision = (objA: any, objB: any) => (
+    const detectCollision = (objA: CollisionObject, objB: CollisionObject) => (
         objA.x < objB.x + objB.width &&
         objA.x + objA.width > objB.x &&
         objA.y < objB.y + objB.height &&

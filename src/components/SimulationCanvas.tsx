@@ -122,6 +122,7 @@ const SimulationCanvas = () => {
           angle={debugInfo.angle * (180 / Math.PI)} 
           isAIControlled={isAIControlled} 
           roadInfo={debugInfo.roadInfo}
+          collisionStatus={car.collided}
           sensorReadings={debugInfo.sensorReadings} // Pass sensor data to UI
         />
       </div>
