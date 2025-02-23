@@ -25,6 +25,7 @@ export default class Car {
     collisionPoints: { x: number; y: number }[]; // Store collision locations
     collisionFlashCounter: number; // Counter for flashing effect
     collisionData: { x: number; y: number; speed: number; sensorReadings: number[]; time: number }[];
+    collisionWorker: Worker;
   
     constructor(x: number, y: number, road: Road, isAIControlled: boolean = false) {
       this.x = x;
@@ -50,6 +51,16 @@ export default class Car {
       this.collisionPoints = [];
       this.collisionFlashCounter = 0;
       this.collisionData = []; // Stores crash data for neural network training
+
+      // **Initialize Web Worker**
+      this.collisionWorker = new Worker(new URL("./collisionWorker.ts", import.meta.url), { type: "module" });
+
+      // **Handle collision results**
+      this.collisionWorker.onmessage = (event) => {
+          if (event.data) {
+            this.handleCollision();
+          }
+      };
     }
   
     /**
@@ -120,10 +131,7 @@ export default class Car {
       this.sensor.update(this.road, traffic, staticObstacles);
 
       // **Check for Collisions**
-      const collision = this.checkCollision(traffic, staticObstacles);
-      if (collision && !this.isAIControlled) {
-        this.handleCollision();
-      }
+      this.checkCollision(traffic, staticObstacles);
     }
 
     /**
@@ -162,37 +170,26 @@ export default class Car {
       this.collisionFlashCounter = 0;
     }
 
-    /**
-     * Collision detection for road boundaries, traffic, and static obstacles.
-     */
-    private checkCollision(
-        traffic: Car[], 
-        staticObstacles: { x: number; y: number; width: number; height: number }[]
-    ): boolean {
-        // **Check Road Boundaries**
-        if (this.x - this.width / 2 < this.road.leftBoundary || this.x + this.width / 2 > this.road.rightBoundary) {
-            console.warn("🚨 Collision with road boundary detected!");
-            return true;
-        }
-
-        // **Check Moving Traffic Cars**
-        for (const car of traffic) {
-            if (this.detectRectangleCollision(this, car)) {
-                console.warn("🚗 Collision with traffic detected!");
-                return true;
-            }
-        }
-
-        // **Check Static Obstacles**
-        for (const obstacle of staticObstacles) {
-            if (this.detectRectangleCollision(this, obstacle)) {
-                console.warn("🛑 Collision with static obstacle detected!");
-                return true;
-            }
-        }
-
-        return false;
+    private checkCollision(traffic: Car[], staticObstacles: { x: number; y: number; width: number; height: number }[]) {
+        this.collisionWorker.postMessage({
+            car: {
+                x: this.x,
+                y: this.y,
+                width: this.width,
+                height: this.height,
+                leftBoundary: this.road.leftBoundary,
+                rightBoundary: this.road.rightBoundary,
+            },
+            traffic: traffic.map(car => ({
+                x: car.x,
+                y: car.y,
+                width: car.width,
+                height: car.height,
+            })),
+            staticObstacles
+        });
     }
+  
   
     /**
      * Detects collision between two rectangular objects.
