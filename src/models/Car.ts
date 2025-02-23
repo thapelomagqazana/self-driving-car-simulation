@@ -22,6 +22,8 @@ export default class Car {
     width: number;
     height: number;
     collided: boolean;
+    collisionPoints: { x: number; y: number }[]; // Store collision locations
+    collisionFlashCounter: number; // Counter for flashing effect
   
     constructor(x: number, y: number, road: Road, isAIControlled: boolean = false) {
       this.x = x;
@@ -44,6 +46,8 @@ export default class Car {
       this.width = 30;
       this.height = 50;
       this.collided = false;
+      this.collisionPoints = [];
+      this.collisionFlashCounter = 0;
     }
   
     /**
@@ -75,46 +79,20 @@ export default class Car {
     }
 
     /**
-     * AI Evasive Maneuvers Based on Sensor Readings
+     * AI Evasive Maneuvers Based on Sensor Readings (Adaptive)
      */
     private makeAIDecision() {
       const inputs = this.sensor.smoothReadings;
 
-      if (inputs.length === 0) return; // No sensor data available
+      if (inputs.length === 0) return;
 
-      // **Threshold for obstacle detection (less than 40% of sensor range)**
-      const dangerThreshold = 0.4;
-
-      // **Get the left, center, and right sensor readings**
-      const left = inputs[0];
-      const midLeft = inputs[2];
-      const midRight = inputs[4];
-      const right = inputs[6];
-
-      // **Find the safest direction based on sensor data**
-      let turnDirection = 0; // Default: Go straight
-
-      if (midLeft < dangerThreshold || left < dangerThreshold) {
-          turnDirection = 1; // Steer right
-      } 
-      else if (midRight < dangerThreshold || right < dangerThreshold) {
-          turnDirection = -1; // Steer left
+      // Basic AI logic: turn if an obstacle is detected within 50% range
+      if (inputs[3] < 0.5) {
+          this.angle += 0.1; // 
       }
 
-      // **Apply steering changes smoothly**
-      this.steering = turnDirection * 0.7; // Adjust steering sensitivity
-
-      // **Adjust speed dynamically**
-      if (inputs[3] < dangerThreshold) {
-          this.speed -= this.brakingPower; // Slow down if directly in danger
-      } else {
-          this.speed += this.acceleration * 0.5; // Resume speed when clear
-      }
-
-      // **Ensure speed remains within limits**
-      this.limitSpeed();
+      this.speed += 0.1;
     }
-
   
     /**
      * Updates the car's movement based on mode (manual or AI).
@@ -124,7 +102,10 @@ export default class Car {
         this.makeAIDecision();
       }
 
-      if (this.collided) return;
+      if (this.collided) {
+        this.collisionFlashCounter++;
+        return;
+      }
 
       this.applyAcceleration();
       this.applyBraking();
@@ -137,11 +118,21 @@ export default class Car {
       this.sensor.update(this.road, traffic, staticObstacles);
 
       // **Check for Collisions**
-      if (this.checkCollision(traffic, staticObstacles) && !this.isAIControlled) {
-        this.collided = true;
-        this.speed = 0;
-        console.warn("🚧 Collision detected! Stopping car.");
+      const collision = this.checkCollision(traffic, staticObstacles);
+      if (collision && !this.isAIControlled) {
+          this.collided = true;
+          this.speed = 0;
+          this.collisionFlashCounter = 0;
+          this.collisionPoints.push({ x: this.x, y: this.y });
+          console.warn("🚧 Collision detected! Stopping car.");
       }
+
+      // // **Check for Collisions**
+      // if (this.checkCollision(traffic, staticObstacles) && !this.isAIControlled) {
+      //   this.collided = true;
+      //   this.speed = 0;
+      //   console.warn("🚧 Collision detected! Stopping car.");
+      // }
     }
 
     /**
@@ -286,13 +277,35 @@ export default class Car {
       ctx.translate(this.x, this.y);
       ctx.rotate(this.angle);
 
+      // **Flashing red outline on collision**
+      if (this.collided && this.collisionFlashCounter % 10 < 5) {
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(-this.width / 2, -this.height / 2, this.width, this.height);
+      }
+
       // Set car color based on whether it's AI-controlled (static traffic)
       ctx.fillStyle = this.isAIControlled ? "#FF0000" : "#00ADB5"; // Red for static cars, Blue for player car
 
       ctx.fillRect(-15, -25, 30, 50);
       ctx.restore();
 
+      // **Draw Collision Points**
+      this.drawCollisionPoints(ctx);
+
       this.sensor.draw(ctx); // Draw sensors
+    }
+
+    /**
+     * Draw collision points on the canvas.
+     */
+    private drawCollisionPoints(ctx: CanvasRenderingContext2D) {
+      ctx.fillStyle = "red";
+      for (const point of this.collisionPoints) {
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
+          ctx.fill();
+      }
     }
 
 }
