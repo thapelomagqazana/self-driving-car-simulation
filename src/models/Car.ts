@@ -189,22 +189,6 @@ export default class Car {
             staticObstacles
         });
     }
-  
-  
-    /**
-     * Detects collision between two rectangular objects.
-     */
-    private detectRectangleCollision(
-        objA: { x: number; y: number; width: number; height: number },
-        objB: { x: number; y: number; width: number; height: number }
-    ): boolean {
-        return (
-            objA.x < objB.x + objB.width &&
-            objA.x + objA.width > objB.x &&
-            objA.y < objB.y + objB.height &&
-            objA.y + objA.height > objB.y
-        );
-    }
 
     /**
     * Handles car acceleration.
