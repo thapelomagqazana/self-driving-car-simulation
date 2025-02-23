@@ -53,7 +53,7 @@ export default class Car {
       this.collisionData = []; // Stores crash data for neural network training
 
       // **Initialize Web Worker**
-      this.collisionWorker = new Worker(new URL("./collisionWorker.ts", import.meta.url), { type: "module" });
+      this.collisionWorker = new Worker(new URL("../workers/collisionWorker.ts", import.meta.url), { type: "module" });
 
       // **Handle collision results**
       this.collisionWorker.onmessage = (event) => {
