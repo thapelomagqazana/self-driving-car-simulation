@@ -12,6 +12,8 @@ const SimulationCanvas = () => {
   const road = new Road(200, 300, 3);
   const [car, setCar] = useState(new Car(road.getLaneCenter(1), 500, road, isAIControlled));
 
+  const [collisionMessage, setCollisionMessage] = useState<string | null>(null);
+
   // Add traffic cars
   const traffic: Car[] = [
     new Car(road.getLaneCenter(0), 200, road, true),
@@ -34,7 +36,8 @@ const SimulationCanvas = () => {
   ];
 
   useEffect(() => {
-    setCar(new Car(road.getLaneCenter(1), 500, road, isAIControlled));
+      setCar(new Car(road.getLaneCenter(1), 500, road, isAIControlled));
+      setCollisionMessage(null);
   }, [isAIControlled]);
 
   useEffect(() => {
@@ -79,6 +82,10 @@ const SimulationCanvas = () => {
       // **Update & Draw Player Car**
       car.update(traffic, staticObstacles);
       car.draw(ctx);
+
+      if (car.collided && !collisionMessage) {
+          setCollisionMessage("🚨 Collision Detected! Click Restart");
+      }
 
       ctx.restore();
 
@@ -130,6 +137,24 @@ const SimulationCanvas = () => {
         >
           {isAIControlled ? "Switch to Manual Mode" : "Switch to AI Mode"}
         </button>
+
+        {collisionMessage && (
+                <div className="absolute top-5 left-1/2 transform -translate-x-1/2 bg-red-500 text-white p-2 rounded">
+                    {collisionMessage}
+                </div>
+        )}
+
+        {car.collided && (
+            <button
+                onClick={() => {
+                    car.reset();
+                    setCollisionMessage(null);
+                }}
+                className="mt-4 p-2 bg-blue-500 text-white rounded"
+            >
+                Restart Simulation
+            </button>
+        )}
       </div>
     </div>
   );

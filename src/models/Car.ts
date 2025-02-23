@@ -24,6 +24,7 @@ export default class Car {
     collided: boolean;
     collisionPoints: { x: number; y: number }[]; // Store collision locations
     collisionFlashCounter: number; // Counter for flashing effect
+    collisionData: { x: number; y: number; speed: number; sensorReadings: number[]; time: number }[];
   
     constructor(x: number, y: number, road: Road, isAIControlled: boolean = false) {
       this.x = x;
@@ -48,6 +49,7 @@ export default class Car {
       this.collided = false;
       this.collisionPoints = [];
       this.collisionFlashCounter = 0;
+      this.collisionData = []; // Stores crash data for neural network training
     }
   
     /**
@@ -120,19 +122,44 @@ export default class Car {
       // **Check for Collisions**
       const collision = this.checkCollision(traffic, staticObstacles);
       if (collision && !this.isAIControlled) {
-          this.collided = true;
-          this.speed = 0;
-          this.collisionFlashCounter = 0;
-          this.collisionPoints.push({ x: this.x, y: this.y });
-          console.warn("🚧 Collision detected! Stopping car.");
+        this.handleCollision();
       }
+    }
 
-      // // **Check for Collisions**
-      // if (this.checkCollision(traffic, staticObstacles) && !this.isAIControlled) {
-      //   this.collided = true;
-      //   this.speed = 0;
-      //   console.warn("🚧 Collision detected! Stopping car.");
-      // }
+    /**
+     * Handles collision event: stops the car, logs data, and saves for AI training.
+     */
+    private handleCollision() {
+      this.collided = true;
+      this.speed = 0;
+      this.collisionFlashCounter = 0;
+      this.collisionPoints.push({ x: this.x, y: this.y });
+
+      console.warn("🚧 Collision detected! Stopping car.");
+
+      // **Save crash data for AI training**
+      this.collisionData.push({
+          x: this.x,
+          y: this.y,
+          speed: this.speed,
+          sensorReadings: [...this.sensor.smoothReadings],
+          time: Date.now()
+      });
+
+      console.table(this.collisionData); // Log crash data
+    }
+
+    /**
+     * Resets the car's position and state after a collision.
+     */
+    reset() {
+      this.x = this.road.getLaneCenter(1);
+      this.y = 500;
+      this.speed = 0;
+      this.angle = 0;
+      this.collided = false;
+      this.collisionPoints = [];
+      this.collisionFlashCounter = 0;
     }
 
     /**
