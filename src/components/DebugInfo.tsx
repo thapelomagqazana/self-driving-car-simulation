@@ -16,7 +16,11 @@ interface DebugInfoProps {
 const DebugInfo: React.FC<DebugInfoProps> = ({ x, y, speed, angle, isAIControlled, roadInfo, sensorReadings }) => {
   return (
     <div className="absolute top-4 left-4 bg-gray-900 text-white p-3 rounded-md text-sm shadow-lg w-60">
-      <p className="font-bold text-yellow-400">🔍 Debug Info</p>
+      <h3 className="font-bold text-yellow-400">🔍 Debug Info</h3>
+
+      <hr className="my-2 border-gray-600" />
+
+      <p className="font-bold text-yellow-400">🚗 Car Info</p>
       <p>🚗 <strong>Mode:</strong> {isAIControlled ? "AI" : "Manual"}</p>
       <p>📍 <strong>Position:</strong> ({x.toFixed(1)}, {y.toFixed(1)})</p>
       <p>⚡ <strong>Speed:</strong> {speed.toFixed(2)} px/frame</p>

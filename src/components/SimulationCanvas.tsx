@@ -28,6 +28,11 @@ const SimulationCanvas = () => {
     sensorReadings: car.sensor.smoothReadings, // Track sensor readings
   });
 
+  const staticObstacles = [
+      { x: road.getLaneCenter(0) - 20, y: 350, width: 40, height: 40 }, // Cone in left lane
+      { x: road.getLaneCenter(2) - 20, y: 500, width: 40, height: 40 }  // Cone in right lane
+  ];
+
   useEffect(() => {
     setCar(new Car(road.getLaneCenter(1), 500, road, isAIControlled));
   }, [isAIControlled]);
@@ -60,13 +65,19 @@ const SimulationCanvas = () => {
       road.updateScroll(car.y);
       road.draw(ctx, canvasHeight);
 
+      // **Draw Static Obstacles**
+      ctx.fillStyle = "orange";
+      for (const obstacle of staticObstacles) {
+          ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+      }
+
       // **Draw Traffic Cars**
       for (const trafficCar of traffic) {
         trafficCar.draw(ctx);
       }
 
       // **Update & Draw Player Car**
-      car.update(traffic);
+      car.update(traffic, staticObstacles);
       car.draw(ctx);
 
       ctx.restore();

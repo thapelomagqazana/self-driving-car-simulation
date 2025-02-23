@@ -30,9 +30,9 @@ export default class Sensor {
      */
     private lastUpdateTime = 0;
 
-    update(road: Road, traffic: Car[]) {
+    update(road: Road, traffic: Car[], staticObstacles: { x: number; y: number; width: number; height: number }[]) {
         const now = performance.now();
-        if (now - this.lastUpdateTime < 50) return; // Limit updates (e.g., every 50ms)
+        if (now - this.lastUpdateTime < 50) return; // Throttle updates (every 50ms)
         this.lastUpdateTime = now;
     
         this.rays = [];
@@ -46,19 +46,17 @@ export default class Sensor {
             const ray = { start: { x: this.car.x, y: this.car.y }, end: { x: endX, y: endY } };
             this.rays.push(ray);
     
-            // **Detect obstacles**
-            const intersection = this.getClosestIntersection(ray, road, traffic);
+            // **Detect obstacles (Road, Traffic, Static Obstacles)**
+            const intersection = this.getClosestIntersection(ray, road, traffic, staticObstacles);
             const distance = Math.hypot(ray.start.x - intersection.x, ray.start.y - intersection.y);
-            newReadings.push(distance / this.rayLength); // Normalize
+            newReadings.push(distance / this.rayLength); // Normalize distance (0 to 1)
         }
     
-        // **Smooth data updates**
+        // **Smooth sensor readings**
         this.smoothReadings = this.smoothReadings.map((prev, i) =>
             prev * (1 - this.smoothingFactor) + newReadings[i] * this.smoothingFactor
         );
     }
-    
-    
 
     /**
      * Finds the closest intersection point of the sensor ray with road boundaries and traffic.
@@ -66,23 +64,44 @@ export default class Sensor {
     getClosestIntersection(
         ray: { start: { x: number; y: number }; end: { x: number; y: number } },
         road: Road,
-        traffic: Car[]
+        traffic: Car[],
+        staticObstacles: { x: number; y: number; width: number; height: number }[]
     ) {
         let closestIntersection: { x: number; y: number } | null = null;
         const minDist = this.rayLength;
-
-        // Check intersection with road boundaries
+    
+        // **Check intersection with road boundaries**
         const roadEdges = this.getRoadEdges(road);
         closestIntersection = this.findClosestIntersection(ray, roadEdges, closestIntersection, minDist);
-
-        // Check intersection with traffic cars
+    
+        // **Check intersection with traffic cars**
         for (const car of traffic) {
             const carEdges = this.getCarEdges(car);
             closestIntersection = this.findClosestIntersection(ray, carEdges, closestIntersection, minDist);
         }
-
+    
+        // **Check intersection with static obstacles**
+        for (const obstacle of staticObstacles) {
+            const obstacleEdges = this.getObstacleEdges(obstacle);
+            closestIntersection = this.findClosestIntersection(ray, obstacleEdges, closestIntersection, minDist);
+        }
+    
         return closestIntersection ?? { x: ray.end.x, y: ray.end.y }; // If no obstacle, use max range
     }
+
+    /**
+     * Returns the edges of a static obstacle as an array of line segments.
+     */
+    private getObstacleEdges(obstacle: { x: number; y: number; width: number; height: number }) {
+        return [
+            { x1: obstacle.x, y1: obstacle.y, x2: obstacle.x + obstacle.width, y2: obstacle.y }, // Top edge
+            { x1: obstacle.x + obstacle.width, y1: obstacle.y, x2: obstacle.x + obstacle.width, y2: obstacle.y + obstacle.height }, // Right edge
+            { x1: obstacle.x + obstacle.width, y1: obstacle.y + obstacle.height, x2: obstacle.x, y2: obstacle.y + obstacle.height }, // Bottom edge
+            { x1: obstacle.x, y1: obstacle.y + obstacle.height, x2: obstacle.x, y2: obstacle.y } // Left edge
+        ];
+    }
+
+    
 
     /**
      * Returns the edges of the road as an array of line segments.

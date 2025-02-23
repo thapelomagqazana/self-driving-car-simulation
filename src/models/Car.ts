@@ -19,6 +19,9 @@ export default class Car {
     controls: { forward: boolean; brake: boolean; left: boolean; right: boolean };
     road: Road;
     sensor: Sensor;
+    width: number;
+    height: number;
+    collided: boolean;
   
     constructor(x: number, y: number, road: Road, isAIControlled: boolean = false) {
       this.x = x;
@@ -38,6 +41,9 @@ export default class Car {
       this.isAIControlled = isAIControlled; // Determines if the car should be AI-driven
       this.controls = { forward: false, brake: false, left: false, right: false };
       this.sensor = new Sensor(this, 7, 150, Math.PI / 2);
+      this.width = 30;
+      this.height = 50;
+      this.collided = false;
     }
   
     /**
@@ -79,17 +85,20 @@ export default class Car {
       // Basic AI logic: turn if an obstacle is detected within 30% range
       if (inputs[3] < 0.5) {
           this.angle += 0.1; // Turn away from obstacle
-          this.speed += this.acceleration;
       }
+
+      this.speed += 0.1;
     }
   
     /**
      * Updates the car's movement based on mode (manual or AI).
      */
-    update(traffic: Car[]) {
+    update(traffic: Car[], staticObstacles: { x: number; y: number; width: number; height: number }[]) {
       if (this.isAIControlled) {
         this.makeAIDecision();
       }
+
+      if (this.collided) return;
 
       this.applyAcceleration();
       this.applyBraking();
@@ -99,7 +108,61 @@ export default class Car {
       this.adjustSteering();
       this.updatePosition();
       this.enforceRoadBoundaries();
-      this.sensor.update(this.road, traffic);
+      this.sensor.update(this.road, traffic, staticObstacles);
+
+      // **Check for Collisions**
+      if (this.checkCollision(traffic, staticObstacles) && !this.isAIControlled) {
+        this.collided = true;
+        this.speed = 0;
+        console.warn("🚧 Collision detected! Stopping car.");
+      }
+    }
+
+    /**
+     * Collision detection for road boundaries, traffic, and static obstacles.
+     */
+    private checkCollision(
+        traffic: Car[], 
+        staticObstacles: { x: number; y: number; width: number; height: number }[]
+    ): boolean {
+        // **Check Road Boundaries**
+        if (this.x - this.width / 2 < this.road.leftBoundary || this.x + this.width / 2 > this.road.rightBoundary) {
+            console.warn("🚨 Collision with road boundary detected!");
+            return true;
+        }
+
+        // **Check Moving Traffic Cars**
+        for (const car of traffic) {
+            if (this.detectRectangleCollision(this, car)) {
+                console.warn("🚗 Collision with traffic detected!");
+                return true;
+            }
+        }
+
+        // **Check Static Obstacles**
+        for (const obstacle of staticObstacles) {
+            if (this.detectRectangleCollision(this, obstacle)) {
+                console.warn("🛑 Collision with static obstacle detected!");
+                return true;
+            }
+        }
+
+        return false;
+    }
+  
+    /**
+     * Detects collision between two rectangular objects.
+     */
+    private detectRectangleCollision(
+        objA: { x: number; y: number; width: number; height: number },
+        objB: { x: number; y: number; width: number; height: number }
+    ): boolean {
+        return (
+            objA.x < objB.x + objB.width &&
+            objA.x + objA.width > objB.x &&
+            objA.y < objB.y + objB.height &&
+            objA.y + objA.height > objB.y
+        );
     }
 
     /**
