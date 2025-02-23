@@ -6,7 +6,7 @@ This project simulates an AI-controlled self-driving car using **JavaScript (Typ
 ## 🎯 Features
 - **🚦 AI-controlled car** that navigates the road using sensor data.
 - **📡 Sensor-based collision detection** for dynamic and static objects.
-- **🛑 Intelligent evasive maneuvers** to avoid obstacles.
+<!-- - **🛑 Intelligent evasive maneuvers** to avoid obstacles. -->
 - **⚠️ Visualized collisions** with flashing effects and markers.
 - **🔍 Debug panel** for real-time status monitoring.
 - **🌍 Infinite road scrolling** for continuous simulation.
