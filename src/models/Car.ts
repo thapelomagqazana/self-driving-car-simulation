@@ -57,7 +57,7 @@ export default class Car {
 
       // **Handle collision results**
       this.collisionWorker.onmessage = (event) => {
-          if (event.data) {
+          if (event.data && !isAIControlled) {
             this.handleCollision();
           }
       };

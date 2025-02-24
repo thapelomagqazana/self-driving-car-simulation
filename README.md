@@ -44,7 +44,7 @@ npm start
 ### 1️⃣ **AI Decision Making**
 - The car uses **7-ray sensors** to detect nearby objects.
 - AI applies **steering logic** to avoid obstacles.
-- AI adjusts **speed dynamically** based on sensor input.
+<!-- - AI adjusts **speed dynamically** based on sensor input. -->
 
 ### 2️⃣ **Collision Detection System**
 - The car detects **road boundaries, static obstacles, and traffic cars**.
@@ -88,7 +88,7 @@ self-driving-car-simulation/
 ## 🛠️ Technologies Used
 - **🖥️ Frontend:** React (TypeScript)
 - **🖌️ Rendering:** Canvas API
-- **🧠 AI Logic:** Custom Neural Decision System
+<!-- - **🧠 AI Logic:** Custom Neural Decision System -->
 - **🕵️‍♂️ Collision Handling:** Web Workers & Bounding Box Detection
 - **⚡ Performance Optimization:** Spatial Partitioning & Event Throttling
 
@@ -124,7 +124,7 @@ This project is **open-source** and available under the **MIT License**.
 ---
 
 ## 📬 Contact
-For questions, suggestions, or issues, reach out via **GitHub Issues** or **email@example.com**.
+For questions, suggestions, or issues, reach out via **GitHub Issues** or **tapsmcgzee8@gmail.com**.
 
 Happy Coding! 🚀
 

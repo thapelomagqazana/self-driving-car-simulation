@@ -14,11 +14,16 @@ const SimulationCanvas = () => {
 
   const [collisionMessage, setCollisionMessage] = useState<string | null>(null);
 
-  // Add traffic cars
+  // Traffic & Obstacles
   const traffic: Car[] = [
     new Car(road.getLaneCenter(0), 200, road, true),
     new Car(road.getLaneCenter(1), 300, road, true),
-    new Car(road.getLaneCenter(2), 400, road, true)
+    new Car(road.getLaneCenter(2), 400, road, true),
+  ];
+
+  const staticObstacles = [
+    { x: road.getLaneCenter(0) - 20, y: 350, width: 40, height: 40 }, // Cone in left lane
+    { x: road.getLaneCenter(2) - 20, y: 500, width: 40, height: 40 }, // Cone in right lane
   ];
 
   const [debugInfo, setDebugInfo] = useState({
@@ -27,17 +32,12 @@ const SimulationCanvas = () => {
     speed: car.speed,
     angle: car.angle,
     roadInfo: road.getDebugInfo(),
-    sensorReadings: car.sensor.smoothReadings, // Track sensor readings
+    sensorReadings: car.sensor.smoothReadings,
   });
 
-  const staticObstacles = [
-      { x: road.getLaneCenter(0) - 20, y: 350, width: 40, height: 40 }, // Cone in left lane
-      { x: road.getLaneCenter(2) - 20, y: 500, width: 40, height: 40 }  // Cone in right lane
-  ];
-
   useEffect(() => {
-      setCar(new Car(road.getLaneCenter(1), 500, road, isAIControlled));
-      setCollisionMessage(null);
+    setCar(new Car(road.getLaneCenter(1), 500, road, isAIControlled));
+    setCollisionMessage(null);
   }, [isAIControlled]);
 
   useEffect(() => {
@@ -52,51 +52,46 @@ const SimulationCanvas = () => {
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
 
-    /**
-     * Optimized Animation Loop
-     */
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Optimize camera movement
       const cameraY = -car.y + canvasHeight * 0.7;
 
       ctx.save();
       ctx.translate(0, cameraY);
 
-      // **Draw Road**
+      // Draw Road
       road.updateScroll(car.y);
       road.draw(ctx, canvasHeight);
 
-      // **Draw Static Obstacles**
+      // Draw Static Obstacles
       ctx.fillStyle = "orange";
       for (const obstacle of staticObstacles) {
-          ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+        ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
       }
 
-      // **Draw Traffic Cars**
+      // Draw Traffic Cars
       for (const trafficCar of traffic) {
         trafficCar.draw(ctx);
       }
 
-      // **Update & Draw Player Car**
+      // Update & Draw Player Car
       car.update(traffic, staticObstacles);
       car.draw(ctx);
 
       if (car.collided && !collisionMessage) {
-          setCollisionMessage("🚨 Collision Detected! Click Restart");
+        setCollisionMessage("🚨 Collision Detected! Click Restart");
       }
 
       ctx.restore();
 
-      // **Update Debug Info**
       setDebugInfo({
         x: car.x,
         y: car.y,
         speed: car.speed,
         angle: car.angle,
         roadInfo: road.getDebugInfo(),
-        sensorReadings: car.sensor.smoothReadings, // Update sensor values in UI
+        sensorReadings: car.sensor.smoothReadings,
       });
 
       animationFrameId = requestAnimationFrame(animate);
@@ -112,9 +107,9 @@ const SimulationCanvas = () => {
   }, [car]);
 
   return (
-    <div className="flex items-start justify-center w-full h-screen p-4">
-      {/* Debug Info Panel (Left Side) */}
-      <div className="mr-4">
+    <div className="flex flex-col items-center w-full min-h-screen p-4 bg-gray-900">
+      {/* Debug Info Panel (Mobile-Friendly) */}
+      <div className="w-full max-w-sm mb-4 sm:mb-0">
         <DebugInfo 
           x={debugInfo.x} 
           y={debugInfo.y} 
@@ -123,38 +118,40 @@ const SimulationCanvas = () => {
           isAIControlled={isAIControlled} 
           roadInfo={debugInfo.roadInfo}
           collisionStatus={car.collided}
-          sensorReadings={debugInfo.sensorReadings} // Pass sensor data to UI
+          sensorReadings={debugInfo.sensorReadings}
         />
       </div>
 
       {/* Simulation Canvas */}
       <div className="relative flex flex-col items-center">
-        <canvas ref={canvasRef} width={400} height={450} className="bg-gray-800" />
+        <canvas ref={canvasRef} width={400} height={450} className="w-full max-w-md bg-gray-800 rounded-lg shadow-lg" />
 
-        {/* Toggle AI/Manual Mode */}
+        {/* AI/Manual Mode Toggle */}
         <button
           onClick={() => setIsAIControlled(!isAIControlled)}
-          className="mt-4 p-2 bg-blue-500 text-white rounded"
+          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md shadow-md transition-transform transform active:scale-95"
         >
           {isAIControlled ? "Switch to Manual Mode" : "Switch to AI Mode"}
         </button>
 
+        {/* Collision Message */}
         {collisionMessage && (
-                <div className="absolute top-5 left-1/2 transform -translate-x-1/2 bg-red-500 text-white p-2 rounded">
-                    {collisionMessage}
-                </div>
+          <div className="absolute top-5 left-1/2 transform -translate-x-1/2 bg-red-500 text-white p-2 rounded shadow-lg animate-pulse">
+            {collisionMessage}
+          </div>
         )}
 
+        {/* Restart Button */}
         {car.collided && (
-            <button
-                onClick={() => {
-                    car.reset();
-                    setCollisionMessage(null);
-                }}
-                className="mt-4 p-2 bg-blue-500 text-white rounded"
-            >
-                Restart Simulation
-            </button>
+          <button
+            onClick={() => {
+              car.reset();
+              setCollisionMessage(null);
+            }}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md shadow-md transition-transform transform active:scale-95"
+          >
+            Restart Simulation
+          </button>
         )}
       </div>
     </div>
