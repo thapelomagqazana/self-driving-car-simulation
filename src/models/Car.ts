@@ -312,7 +312,7 @@ export default class Car {
       }
 
       // Set car color based on whether it's AI-controlled (static traffic)
-      ctx.fillStyle = this.isAIControlled ? "#FF0000" : this.color; // Red for static cars, Blue for player car
+      ctx.fillStyle = this.color; // Red for static cars, Blue for player car
 
       ctx.fillRect(-15, -25, 30, 50);
       ctx.restore();

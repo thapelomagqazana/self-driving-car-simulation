@@ -42,9 +42,9 @@ export default class Traffic {
         }
     
         for (const car of this.cars) {
-            // console.log(`Before update: Car at (x: ${car.x}, y: ${car.y}, speed: ${car.speed})`);
+            // **Ensure smooth speed transitions**
+            car.speed *= 0.98; // Reduce speed gradually for smoother movement
             car.update([], staticObstacles);
-            // console.log(`After update: Car at (x: ${car.x}, y: ${car.y}, speed: ${car.speed})`);
         }
     
         this.cars = this.cars.filter(car => car.y < playerCar.y + 600);
