@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import Car from "../models/Car";
 import Road from "../models/Road";
+import Traffic from "../models/Traffic";
 import DebugInfo from "./DebugInfo";
 
 /**
@@ -14,12 +15,7 @@ const SimulationCanvas = () => {
 
   const [collisionMessage, setCollisionMessage] = useState<string | null>(null);
 
-  // Traffic & Obstacles
-  const traffic: Car[] = [
-    new Car(road.getLaneCenter(0), 200, road, true),
-    new Car(road.getLaneCenter(1), 300, road, true),
-    new Car(road.getLaneCenter(2), 400, road, true),
-  ];
+  const traffic = new Traffic(road, 5, 3000);
 
   const staticObstacles = [
     { x: road.getLaneCenter(0) - 20, y: 350, width: 40, height: 40 }, // Cone in left lane
@@ -70,13 +66,11 @@ const SimulationCanvas = () => {
         ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
       }
 
-      // Draw Traffic Cars
-      for (const trafficCar of traffic) {
-        trafficCar.draw(ctx);
-      }
+      traffic.update(car, staticObstacles);
+      traffic.draw(ctx);
 
       // Update & Draw Player Car
-      car.update(traffic, staticObstacles);
+      car.update(traffic.cars, staticObstacles);
       car.draw(ctx);
 
       if (car.collided && !collisionMessage) {
