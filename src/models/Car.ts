@@ -25,6 +25,7 @@ export default class Car {
     collisionPoints: { x: number; y: number }[]; // Store collision locations
     collisionFlashCounter: number; // Counter for flashing effect
     collisionData: { x: number; y: number; speed: number; sensorReadings: number[]; time: number }[];
+    color: string; // New property
   
     constructor(x: number, y: number, road: Road, isAIControlled: boolean = false) {
       this.x = x;
@@ -50,6 +51,7 @@ export default class Car {
       this.collisionPoints = [];
       this.collisionFlashCounter = 0;
       this.collisionData = []; // Stores crash data for neural network training
+      this.color = "#00ADB5"; // Default color
     }
   
     /**
@@ -310,7 +312,7 @@ export default class Car {
       }
 
       // Set car color based on whether it's AI-controlled (static traffic)
-      ctx.fillStyle = this.isAIControlled ? "#FF0000" : "#00ADB5"; // Red for static cars, Blue for player car
+      ctx.fillStyle = this.isAIControlled ? "#FF0000" : this.color; // Red for static cars, Blue for player car
 
       ctx.fillRect(-15, -25, 30, 50);
       ctx.restore();

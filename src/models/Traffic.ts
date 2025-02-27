@@ -2,6 +2,15 @@ import Road from "./Road";
 import Car from "./Car";
 
 /**
+ * Enum for vehicle types.
+ */
+enum VehicleType {
+    CAR = "car",
+    TRUCK = "truck",
+    MOTORCYCLE = "motorcycle"
+}
+
+/**
  * Traffic Class:
  * - Manages AI-controlled traffic vehicles.
  */
@@ -18,7 +27,7 @@ export default class Traffic {
         this.lastSpawnTime = performance.now();
 
         for (let i = 0; i < count; i++) {
-            this.spawnVehicle();
+            this.spawnVehicle(this.road);
         }
     }
 
@@ -28,7 +37,7 @@ export default class Traffic {
     update(playerCar: Car, staticObstacles: { x: number; y: number; width: number; height: number }[]) {
         const now = performance.now();
         if (now - this.lastSpawnTime > this.spawnInterval) {
-            this.spawnVehicle();
+            this.spawnVehicle(this.road);
             this.lastSpawnTime = now;
         }
     
@@ -43,19 +52,56 @@ export default class Traffic {
     
 
     /**
-     * Spawns a traffic vehicle in a random lane.
+     * Spawns a random traffic vehicle.
      */
-    private spawnVehicle() {
-        const laneIndex = Math.floor(Math.random() * this.road.laneCount);
-        const x = this.road.getLaneCenter(laneIndex);
-        const y = -Math.random() * 500 - 100; // Ensure spawn is within visible range
-        const speed = 1.5 + Math.random() * 2;
-    
-        const vehicle = new Car(x, y, this.road, true);
+    private spawnVehicle(road: Road) {
+        const laneIndex = Math.floor(Math.random() * road.laneCount);
+        const x = road.getLaneCenter(laneIndex);
+        const y = -Math.random() * 1000; // Ensure it spawns offscreen
+
+        // Randomly select a vehicle type
+        const vehicleType = this.getRandomVehicleType();
+        let width, height, speed, color;
+
+        switch (vehicleType) {
+            case VehicleType.TRUCK:
+                width = 40;
+                height = 80;
+                speed = 1.5 + Math.random() * 1; // Trucks are slower
+                color = "brown";
+                break;
+            case VehicleType.MOTORCYCLE:
+                width = 20;
+                height = 40;
+                speed = 3 + Math.random() * 1.5; // Motorcycles are faster
+                color = "yellow";
+                break;
+            case VehicleType.CAR:
+            default:
+                width = 30;
+                height = 50;
+                speed = 2 + Math.random() * 2; // Regular speed
+                color = "red";
+                break;
+        }
+
+        const vehicle = new Car(x, y, road, true);
         vehicle.speed = speed;
+        vehicle.width = width;
+        vehicle.height = height;
+        vehicle.color = color; // Add a color property
+
         this.cars.push(vehicle);
-    
-        // console.log(`Traffic spawned at (x: ${x}, y: ${y}, speed: ${speed})`);
+
+        // console.log(`🚗 Spawned ${vehicleType} at (x: ${x}, y: ${y}, speed: ${speed.toFixed(2)})`);
+    }
+
+    /**
+     * Returns a random vehicle type.
+     */
+    private getRandomVehicleType(): VehicleType {
+        const types = Object.values(VehicleType);
+        return types[Math.floor(Math.random() * types.length)];
     }
     
 
