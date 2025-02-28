@@ -67,17 +67,28 @@ export default class Road {
     }
 
     /**
-     * Draws the road with infinite scrolling and lane continuity.
+     * Draws the road with infinite scrolling and better lane continuity.
      */
     draw(ctx: CanvasRenderingContext2D, canvasHeight: number) {
-        ctx.lineWidth = 4;
+        // **Apply Road Background (Gray Gradient)**
+        const gradient = ctx.createLinearGradient(0, -canvasHeight * 2, 0, canvasHeight * 2);
+        gradient.addColorStop(0, "#444"); // Dark top
+        gradient.addColorStop(1, "#222"); // Darker bottom
+        ctx.fillStyle = gradient;
+        ctx.fillRect(this.leftBoundary, -canvasHeight * 2, this.width, canvasHeight * 4);
+
+        // **Soft Lane Edge Indicators (Faded White)**
+        ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+        ctx.fillRect(this.leftBoundary, -canvasHeight * 2, 5, canvasHeight * 4);
+        ctx.fillRect(this.rightBoundary - 5, -canvasHeight * 2, 5, canvasHeight * 4);
+
+        ctx.lineWidth = 3;
         ctx.strokeStyle = "#ffffff";
 
-        // **Fix: Use `lineDashOffset` for Continuous Dashed Lines**
+        // **Dashed Lane Markings for Center Lanes**
         ctx.setLineDash([20, 30]);
-        ctx.lineDashOffset = -this.scrollOffset; // Global dash alignment
+        ctx.lineDashOffset = -this.scrollOffset;
 
-        // **Draw Lane Markings in a Single Pass**
         for (let j = 1; j < this.laneCount; j++) {
             const x = this.leftBoundary + j * this.laneWidth;
             ctx.beginPath();
@@ -86,20 +97,28 @@ export default class Road {
             ctx.stroke();
         }
 
-        // **Fix: Ensure Boundaries Extend Indefinitely**
+        // **Solid Road Boundaries**
         ctx.setLineDash([]);
-        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 5;
 
-        // Left boundary
         ctx.beginPath();
         ctx.moveTo(this.leftBoundary, -canvasHeight * 10);
         ctx.lineTo(this.leftBoundary, canvasHeight * 10);
         ctx.stroke();
 
-        // Right boundary
         ctx.beginPath();
         ctx.moveTo(this.rightBoundary, -canvasHeight * 10);
         ctx.lineTo(this.rightBoundary, canvasHeight * 10);
         ctx.stroke();
+
+        // **Lane Position Markers**
+        ctx.fillStyle = "rgba(173, 216, 230, 0.5)";
+        for (let j = 0; j < this.laneCount; j++) {
+            const x = this.getLaneCenter(j);
+            ctx.beginPath();
+            ctx.arc(x, 50, 5, 0, Math.PI * 2);
+            ctx.fill();
+        }
     }
+
 }

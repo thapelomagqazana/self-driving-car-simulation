@@ -14,12 +14,13 @@ const SimulationCanvas = () => {
   const [car, setCar] = useState(new Car(road.getLaneCenter(1), 500, road, isAIControlled));
 
   const [collisionMessage, setCollisionMessage] = useState<string | null>(null);
+  const [nearestTrafficDistance, setNearestTrafficDistance] = useState<number>(Infinity);
 
   const traffic = new Traffic(road, 5, 3000);
 
   const staticObstacles = [
-    { x: road.getLaneCenter(0) - 20, y: 350, width: 40, height: 40 }, // Cone in left lane
-    { x: road.getLaneCenter(2) - 20, y: 500, width: 40, height: 40 }, // Cone in right lane
+    { x: road.getLaneCenter(0) - 20, y: 350, width: 40, height: 40 },
+    { x: road.getLaneCenter(2) - 20, y: 500, width: 40, height: 40 },
   ];
 
   const [debugInfo, setDebugInfo] = useState({
@@ -73,6 +74,14 @@ const SimulationCanvas = () => {
       car.update(traffic.cars, staticObstacles);
       car.draw(ctx);
 
+      // **Update Nearest Traffic Distance**
+      let minDistance = Number.MAX_VALUE;
+      for (const trafficCar of traffic.cars) {
+        const distance = Math.abs(car.y - trafficCar.y);
+        if (distance < minDistance) minDistance = distance;
+      }
+      setNearestTrafficDistance(parseFloat(minDistance.toFixed(2)));
+
       if (car.collided && !collisionMessage) {
         setCollisionMessage("🚨 Collision Detected! Click Restart");
       }
@@ -114,6 +123,13 @@ const SimulationCanvas = () => {
           collisionStatus={car.collided}
           sensorReadings={debugInfo.sensorReadings}
         />
+      </div>
+
+      {/* Vehicle Speed and Distance Display */}
+      <div className="flex items-center justify-center w-full mt-4">
+          <div className="bg-gray-700 text-white p-3 rounded-md text-sm">
+              <p><strong>Nearest Traffic Distance:</strong> {nearestTrafficDistance} m</p>
+          </div>
       </div>
 
       {/* Simulation Canvas */}

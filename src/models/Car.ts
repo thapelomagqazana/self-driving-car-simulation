@@ -344,6 +344,15 @@ export default class Car {
       ctx.translate(this.x, this.y);
       ctx.rotate(this.angle);
 
+      // **Brake Lights - Show Red Glow When Braking**
+      if (this.controls.brake || this.speed < 0.8) {
+          ctx.fillStyle = "red";
+          ctx.beginPath();
+          ctx.arc(-this.width / 3, this.height / 2, 3, 0, Math.PI * 2);
+          ctx.arc(this.width / 3, this.height / 2, 3, 0, Math.PI * 2);
+          ctx.fill();
+      }
+
       // **Flashing red outline on collision**
       if (this.collided && this.collisionFlashCounter % 10 < 5) {
         ctx.strokeStyle = "red";
