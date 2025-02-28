@@ -9,12 +9,13 @@ interface DebugInfoProps {
   roadInfo: { lanePositions: number[]; leftBoundary: number; rightBoundary: number };
   collisionStatus: boolean;
   sensorReadings: number[];
+  trafficData: { carCount: number; nearestCarDistance: number };
 }
 
 /**
  * DebugInfo Component: Displays real-time car, road, and sensor information.
  */
-const DebugInfo: React.FC<DebugInfoProps> = ({ x, y, speed, angle, isAIControlled, roadInfo, collisionStatus, sensorReadings }) => {
+const DebugInfo: React.FC<DebugInfoProps> = ({ x, y, speed, angle, isAIControlled, roadInfo, collisionStatus, sensorReadings, trafficData }) => {
   return (
     <div className="absolute top-4 left-4 bg-gray-900 text-white p-3 rounded-md text-sm shadow-lg w-60">
       <h3 className="font-bold text-yellow-400">🔍 Debug Info</h3>
@@ -49,6 +50,12 @@ const DebugInfo: React.FC<DebugInfoProps> = ({ x, y, speed, angle, isAIControlle
           </li>
         ))}
       </ul>
+
+      <hr className="my-2 border-gray-600" />
+      <p className="font-bold text-yellow-400">🚗 Traffic Info</p>
+
+      <p><strong>Traffic Count:</strong> {trafficData.carCount}</p>
+      <p><strong>Nearest Car Distance:</strong> {trafficData.nearestCarDistance.toFixed(2)} m</p>
     </div>
   );
 };

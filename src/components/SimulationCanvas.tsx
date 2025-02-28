@@ -14,7 +14,7 @@ const SimulationCanvas = () => {
   const [car, setCar] = useState(new Car(road.getLaneCenter(1), 500, road, isAIControlled));
 
   const [collisionMessage, setCollisionMessage] = useState<string | null>(null);
-  const [nearestTrafficDistance, setNearestTrafficDistance] = useState<number>(Infinity);
+  const [trafficData, setTrafficData] = useState({ carCount: 0, nearestCarDistance: Infinity });
 
   const traffic = new Traffic(road, 5, 3000);
 
@@ -30,6 +30,7 @@ const SimulationCanvas = () => {
     angle: car.angle,
     roadInfo: road.getDebugInfo(),
     sensorReadings: car.sensor.smoothReadings,
+    trafficData
   });
 
   useEffect(() => {
@@ -48,6 +49,15 @@ const SimulationCanvas = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
+
+    const updateTrafficStats = () => {
+      let minDistance = Number.MAX_VALUE;
+      for (const trafficCar of traffic.cars) {
+        const distance = Math.abs(car.y - trafficCar.y);
+        if (distance < minDistance) minDistance = distance;
+      }
+      setTrafficData({ carCount: traffic.cars.length, nearestCarDistance: minDistance });
+    };
 
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -74,14 +84,6 @@ const SimulationCanvas = () => {
       car.update(traffic.cars, staticObstacles);
       car.draw(ctx);
 
-      // **Update Nearest Traffic Distance**
-      let minDistance = Number.MAX_VALUE;
-      for (const trafficCar of traffic.cars) {
-        const distance = Math.abs(car.y - trafficCar.y);
-        if (distance < minDistance) minDistance = distance;
-      }
-      setNearestTrafficDistance(parseFloat(minDistance.toFixed(2)));
-
       if (car.collided && !collisionMessage) {
         setCollisionMessage("🚨 Collision Detected! Click Restart");
       }
@@ -95,8 +97,9 @@ const SimulationCanvas = () => {
         angle: car.angle,
         roadInfo: road.getDebugInfo(),
         sensorReadings: car.sensor.smoothReadings,
+        trafficData
       });
-
+      updateTrafficStats(); // Update traffic stats
       animationFrameId = requestAnimationFrame(animate);
     };
 
@@ -122,14 +125,8 @@ const SimulationCanvas = () => {
           roadInfo={debugInfo.roadInfo}
           collisionStatus={car.collided}
           sensorReadings={debugInfo.sensorReadings}
+          trafficData={trafficData}
         />
-      </div>
-
-      {/* Vehicle Speed and Distance Display */}
-      <div className="flex items-center justify-center w-full mt-4">
-          <div className="bg-gray-700 text-white p-3 rounded-md text-sm">
-              <p><strong>Nearest Traffic Distance:</strong> {nearestTrafficDistance} m</p>
-          </div>
       </div>
 
       {/* Simulation Canvas */}
