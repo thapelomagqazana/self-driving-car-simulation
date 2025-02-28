@@ -19,12 +19,16 @@ export default class Traffic {
     road: Road;
     spawnInterval: number;
     lastSpawnTime: number;
+    maxTraffic: number;
+    carPool: Car[];
 
-    constructor(road: Road, count: number, spawnInterval: number = 3000) {
+    constructor(road: Road, count: number, spawnInterval: number = 3000, maxTraffic: number = 15) {
         this.road = road;
         this.cars = [];
+        this.carPool = [];
         this.spawnInterval = spawnInterval;
         this.lastSpawnTime = performance.now();
+        this.maxTraffic = maxTraffic;
 
         for (let i = 0; i < count; i++) {
             this.spawnVehicle();
@@ -37,7 +41,9 @@ export default class Traffic {
     update(playerCar: Car, staticObstacles: { x: number; y: number; width: number; height: number }[]) {
         const now = performance.now();
         if (now - this.lastSpawnTime > this.spawnInterval) {
-            this.spawnVehicle();
+            if (this.cars.length < this.maxTraffic) {
+                this.spawnVehicle();
+            }
             this.lastSpawnTime = now;
         }
 
@@ -47,8 +53,6 @@ export default class Traffic {
             this.handleObstacleAvoidance(car, staticObstacles);
             this.enforceRoadBoundaries(car);
             this.addUnpredictableBraking(car);
-            this.increaseTrafficDensity();
-
 
             car.update([], staticObstacles);
         }
@@ -58,7 +62,20 @@ export default class Traffic {
             playerCar.makeAIDecision(this.cars);
         }
 
-        this.cars = this.cars.filter(car => car.y < playerCar.y + 600);
+        // **Optimized Despawn Logic: Instead of filtering, recycle cars into the pool**
+        this.recycleCars(playerCar.y);
+    }
+
+    /**
+     * **Object Pooling: Reuse Cars Instead of Destroying Them**
+     */
+    private recycleCars(playerY: number) {
+        for (let i = this.cars.length - 1; i >= 0; i--) {
+            if (this.cars[i].y > playerY + 600) {
+                const car = this.cars.splice(i, 1)[0]; // Remove from active list
+                this.carPool.push(car); // Add to object pool for reuse
+            }
+        }
     }
 
     /**
@@ -72,51 +89,33 @@ export default class Traffic {
     }
 
     /**
-     * **Dynamically Increase Traffic Density**
-     * - As the player progresses, spawn more cars.
-     */
-    private increaseTrafficDensity() {
-        if (Math.random() < 0.02 && this.cars.length < 10) {
-            this.spawnVehicle();
-        }
-    }
-
-    /**
-     * **Smooth Speed Changes:**
-     * - Gradually accelerate instead of instant speed jumps.
-     * - Decelerate smoothly instead of sudden stops.
-     */
-    private smoothSpeedChanges(car: Car) {
-        const targetSpeed = car.speed;
-        if (Math.abs(targetSpeed - car.speed) > 0.05) {
-            car.speed += (targetSpeed - car.speed) * 0.1; // Smooth transition
-        }
-    }
-
-    /**
      * **Traffic AI: Natural Lane Changing**
      * - Look ahead and decide when to switch lanes safely.
      * - Add randomness to prevent predictable behavior.
      */
     private handleLaneChange(car: Car) {
+        if (Math.random() < 0.02) return; // Skip some cycles to reduce AI overhead
+
         const aheadCar = this.getCarAhead(car);
         if (aheadCar && car.y - aheadCar.y < 100) {
             const laneOptions = this.getAvailableLanes(car);
-            if (laneOptions.length > 0 && Math.random() < 0.02) { // Random chance to switch
+            if (laneOptions.length > 0) {
                 car.x = this.road.getLaneCenter(laneOptions[Math.floor(Math.random() * laneOptions.length)]);
             }
         }
     }
 
     /**
-     * **AI: Adjust Speed Based on Traffic Density**
+     * **Optimized AI: Adjust Speed Based on Traffic Density**
      */
     private handleSpeedAdjustment(car: Car) {
+        if (Math.random() < 0.05) return; // Throttle AI calculations
+
         const aheadCar = this.getCarAhead(car);
         if (aheadCar && car.y - aheadCar.y < 120) {
-            car.speed *= 0.98; // Smoothly reduce speed
+            car.speed *= 0.98;
         } else {
-            car.speed *= 1.01; // Gradually return to normal speed
+            car.speed *= 1.01;
         }
     }
 
@@ -126,9 +125,9 @@ export default class Traffic {
     private handleObstacleAvoidance(car: Car, staticObstacles: { x: number; y: number; width: number; height: number }[]) {
         for (const obstacle of staticObstacles) {
             if (Math.abs(car.x - obstacle.x) < 30 && Math.abs(car.y - obstacle.y) < 100) {
-                car.speed *= 0.85; // Gradual slowdown
+                car.speed *= 0.85;
                 if (Math.abs(car.y - obstacle.y) < 50) {
-                    car.speed = 0; // Full stop if too close
+                    car.speed = 0;
                 }
             }
         }
@@ -149,7 +148,7 @@ export default class Traffic {
     }
 
     /**
-     * Gets the car directly ahead in the same lane.
+     * Gets the car directly ahead in the same lane (optimized check).
      */
     private getCarAhead(car: Car): Car | null {
         let closestCar: Car | null = null;
@@ -177,43 +176,51 @@ export default class Traffic {
     }
 
     /**
-     * Spawns a random traffic vehicle.
+     * **Efficient Vehicle Spawning: Uses Object Pooling**
      */
     private spawnVehicle() {
-        const laneIndex = Math.floor(Math.random() * this.road.laneCount);
-        const x = this.road.getLaneCenter(laneIndex);
-        const y = -Math.random() * 800 - 200; // More natural spacing
+        let vehicle: Car;
+        if (this.carPool.length > 0) {
+            // Reuse existing car from the pool
+            vehicle = this.carPool.pop()!;
+            vehicle.y = -Math.random() * 800 - 200;
+        } else {
+            // Create a new car if pool is empty
+            const laneIndex = Math.floor(Math.random() * this.road.laneCount);
+            const x = this.road.getLaneCenter(laneIndex);
+            const y = -Math.random() * 800 - 200;
 
-        const vehicleType = this.getRandomVehicleType();
-        let width, height, speed, color;
+            const vehicleType = this.getRandomVehicleType();
+            let width, height, speed, color;
 
-        switch (vehicleType) {
-            case VehicleType.TRUCK:
-                width = 40;
-                height = 80;
-                speed = 1.8 + Math.random() * 0.5;
-                color = "brown";
-                break;
-            case VehicleType.MOTORCYCLE:
-                width = 20;
-                height = 40;
-                speed = 3.5 + Math.random() * 1;
-                color = "yellow";
-                break;
-            case VehicleType.CAR:
-            default:
-                width = 30;
-                height = 50;
-                speed = 2.5 + Math.random() * 0.8;
-                color = "red";
-                break;
+            switch (vehicleType) {
+                case VehicleType.TRUCK:
+                    width = 40;
+                    height = 80;
+                    speed = 1.8 + Math.random() * 0.5;
+                    color = "brown";
+                    break;
+                case VehicleType.MOTORCYCLE:
+                    width = 20;
+                    height = 40;
+                    speed = 3.5 + Math.random() * 1;
+                    color = "yellow";
+                    break;
+                case VehicleType.CAR:
+                default:
+                    width = 30;
+                    height = 50;
+                    speed = 2.5 + Math.random() * 0.8;
+                    color = "red";
+                    break;
+            }
+
+            vehicle = new Car(x, y, this.road, true);
+            vehicle.width = width;
+            vehicle.height = height;
+            vehicle.speed = speed;
+            vehicle.color = color;
         }
-
-        const vehicle = new Car(x, y, this.road, true);
-        vehicle.speed = speed;
-        vehicle.width = width;
-        vehicle.height = height;
-        vehicle.color = color;
 
         this.cars.push(vehicle);
     }
@@ -235,3 +242,4 @@ export default class Traffic {
         }
     }
 }
+
