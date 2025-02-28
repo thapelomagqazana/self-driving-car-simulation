@@ -85,25 +85,65 @@ export default class Car {
     /**
      * AI Evasive Maneuvers Based on Sensor Readings (Adaptive)
      */
-    private makeAIDecision() {
+    public makeAIDecision(traffic: Car[]) {
       const inputs = this.sensor.smoothReadings;
 
       if (inputs.length === 0) return;
 
-      // Basic AI logic: turn if an obstacle is detected within 50% range
-      if (inputs[3] < 0.5) {
-          this.angle += 0.1; // 
+      // Detect traffic ahead
+      const carAhead = this.getCarAhead(traffic);
+      
+      if (carAhead) {
+          if (this.y - carAhead.y < 120) {
+              this.speed *= 0.95; // Slow down if too close
+          }
+          if (this.y - carAhead.y < 80 && Math.random() < 0.1) {
+              const laneOptions = this.getAvailableLanes();
+              if (laneOptions.length > 0) {
+                  this.x = this.road.getLaneCenter(laneOptions[Math.floor(Math.random() * laneOptions.length)]);
+              }
+          }
       }
 
+      // If the road is clear, accelerate
       this.speed += 0.1;
     }
+
+    /**
+    * Gets the car directly ahead in the same lane.
+    */
+    private getCarAhead(traffic: Car[]): Car | null {
+      let closestCar: Car | null = null;
+      for (const other of traffic) {
+          if (other !== this && other.x === this.x && other.y < this.y) {
+              if (!closestCar || other.y > closestCar.y) {
+                  closestCar = other;
+              }
+          }
+      }
+      return closestCar;
+    }
+
+    /**
+    * Gets available lanes for lane switching.
+    */
+    private getAvailableLanes(): number[] {
+      const currentLane = this.road.getLaneCenters().indexOf(this.x);
+      const availableLanes = [];
+
+      if (currentLane > 0) availableLanes.push(currentLane - 1);
+      if (currentLane < this.road.laneCount - 1) availableLanes.push(currentLane + 1);
+
+      return availableLanes;
+    }
+
   
     /**
      * Updates the car's movement based on mode (manual or AI).
      */
     update(traffic: Car[], staticObstacles: { x: number; y: number; width: number; height: number }[]) {
       if (this.isAIControlled) {
-        this.makeAIDecision();
+        this.makeAIDecision(traffic);
       }
 
       if (this.collided) {
