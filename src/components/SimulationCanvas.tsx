@@ -69,7 +69,7 @@ const SimulationCanvas = () => {
 
       // Draw Road
       road.updateScroll(car.y);
-      road.draw(ctx, canvasHeight);
+      road.draw(ctx, canvasHeight, car.y);
 
       // Draw Static Obstacles
       ctx.fillStyle = "orange";

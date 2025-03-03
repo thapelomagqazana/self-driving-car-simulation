@@ -1,3 +1,7 @@
+/**
+ * Road class responsible for rendering an infinite multi-lane road
+ * with seamless upward and downward scrolling and a solid gray background.
+ */
 export default class Road {
     x: number;
     width: number;
@@ -6,9 +10,14 @@ export default class Road {
     rightBoundary: number;
     laneWidth: number;
     segmentLength: number;
-    segments: number[]; // List of road segment Y-positions
     scrollOffset: number;
 
+    /**
+     * Creates a new Road instance.
+     * @param x - Horizontal center of the road.
+     * @param width - Total width of the road.
+     * @param laneCount - Number of lanes (default is 3).
+     */
     constructor(x: number, width: number, laneCount: number = 3) {
         this.x = x;
         this.width = width;
@@ -18,47 +27,35 @@ export default class Road {
         this.rightBoundary = this.x + this.width / 2;
         this.segmentLength = 200;
         this.scrollOffset = 0;
-
-        // **Initialize Road Segments for Smooth Recycling**
-        this.segments = [];
-        for (let i = 0; i < 20; i++) { // Keep extra segments for recycling
-            this.segments.push(i * this.segmentLength);
-        }
     }
 
     /**
      * Returns the center X position of a specific lane.
+     * @param laneIndex - The index of the lane (0-based).
      */
     getLaneCenter(laneIndex: number): number {
         return this.leftBoundary + (laneIndex + 0.5) * this.laneWidth;
     }
 
-
-
     /**
-     * Recycles old road segments to maintain infinite scrolling.
+     * Updates the scroll offset based on the car's Y position.
+     * @param carY - Vertical position of the car.
      */
     updateScroll(carY: number) {
         this.scrollOffset = -carY % this.segmentLength;
-
-        // **Fix: Proper Segment Recycling Without Unused Variables**
-        while (this.segments.length > 0 && this.segments[0] + this.scrollOffset > this.segmentLength) {
-            this.segments.push(this.segments[this.segments.length - 1] + this.segmentLength);
-            this.segments.shift(); // Remove the top segment
-        }
     }
 
     /**
      * Returns the center X positions of all lanes.
      */
     getLaneCenters(): number[] {
-        return Array.from({ length: this.laneCount }, (_, i) => this.leftBoundary + (i + 0.5) * this.laneWidth);
+        return Array.from({ length: this.laneCount }, (_, i) => this.getLaneCenter(i));
     }
 
     /**
-     * Debugging: Get road info for display.
+     * Provides debug information about the road.
      */
-       getDebugInfo() {
+    getDebugInfo() {
         return {
             lanePositions: this.getLaneCenters(),
             leftBoundary: this.leftBoundary,
@@ -67,58 +64,64 @@ export default class Road {
     }
 
     /**
-     * Draws the road with infinite scrolling and better lane continuity.
+     * Draws the infinite road with a solid gray background, infinite dashes,
+     * and solid side boundaries, relative to the car's Y position.
+     * @param ctx - Canvas rendering context.
+     * @param canvasHeight - Canvas height.
+     * @param carY - Car's vertical position for offsetting the view.
      */
-    draw(ctx: CanvasRenderingContext2D, canvasHeight: number) {
-        // **Apply Road Background (Gray Gradient)**
-        const gradient = ctx.createLinearGradient(0, -canvasHeight * 2, 0, canvasHeight * 2);
-        gradient.addColorStop(0, "#444"); // Dark top
-        gradient.addColorStop(1, "#222"); // Darker bottom
-        ctx.fillStyle = gradient;
-        ctx.fillRect(this.leftBoundary, -canvasHeight * 2, this.width, canvasHeight * 4);
+    draw(ctx: CanvasRenderingContext2D, canvasHeight: number, carY: number) {
+        const visibleRange = canvasHeight * 3; // Draw well beyond the screen
 
-        // **Soft Lane Edge Indicators (Faded White)**
+        // Solid gray background filling the entire visible road area
+        ctx.fillStyle = "#333"; // Dark gray road color
+        ctx.fillRect(
+            this.leftBoundary,
+            carY - visibleRange,
+            this.width,
+            visibleRange * 2
+        );
+
+        // Soft white edge indicators (optional)
         ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
-        ctx.fillRect(this.leftBoundary, -canvasHeight * 2, 5, canvasHeight * 4);
-        ctx.fillRect(this.rightBoundary - 5, -canvasHeight * 2, 5, canvasHeight * 4);
+        ctx.fillRect(this.leftBoundary, carY - visibleRange, 5, visibleRange * 2);
+        ctx.fillRect(this.rightBoundary - 5, carY - visibleRange, 5, visibleRange * 2);
 
+        // Dashed lane markings
         ctx.lineWidth = 3;
-        ctx.strokeStyle = "#ffffff";
-
-        // **Dashed Lane Markings for Center Lanes**
+        ctx.strokeStyle = "#fff";
         ctx.setLineDash([20, 30]);
-        ctx.lineDashOffset = -this.scrollOffset;
+        ctx.lineDashOffset = -(carY % this.segmentLength);
 
         for (let j = 1; j < this.laneCount; j++) {
             const x = this.leftBoundary + j * this.laneWidth;
             ctx.beginPath();
-            ctx.moveTo(x, -canvasHeight * 10);
-            ctx.lineTo(x, canvasHeight * 10);
+            ctx.moveTo(x, carY - visibleRange);
+            ctx.lineTo(x, carY + visibleRange);
             ctx.stroke();
         }
 
-        // **Solid Road Boundaries**
+        // Solid road boundaries
         ctx.setLineDash([]);
         ctx.lineWidth = 5;
 
         ctx.beginPath();
-        ctx.moveTo(this.leftBoundary, -canvasHeight * 10);
-        ctx.lineTo(this.leftBoundary, canvasHeight * 10);
+        ctx.moveTo(this.leftBoundary, carY - visibleRange);
+        ctx.lineTo(this.leftBoundary, carY + visibleRange);
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.moveTo(this.rightBoundary, -canvasHeight * 10);
-        ctx.lineTo(this.rightBoundary, canvasHeight * 10);
+        ctx.moveTo(this.rightBoundary, carY - visibleRange);
+        ctx.lineTo(this.rightBoundary, carY + visibleRange);
         ctx.stroke();
 
-        // **Lane Position Markers**
+        // Optional: Lane center markers near car (for debugging or decoration)
         ctx.fillStyle = "rgba(173, 216, 230, 0.5)";
         for (let j = 0; j < this.laneCount; j++) {
             const x = this.getLaneCenter(j);
             ctx.beginPath();
-            ctx.arc(x, 50, 5, 0, Math.PI * 2);
+            ctx.arc(x, carY, 5, 0, Math.PI * 2);
             ctx.fill();
         }
     }
-
 }
