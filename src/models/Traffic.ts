@@ -59,7 +59,7 @@ export default class Traffic {
 
         // Ensure AI-controlled player car reacts to traffic
         if (playerCar.isAIControlled) {
-            playerCar.makeAIDecision(this.cars);
+            playerCar.makeAIDecisionforNonPlayerCars(this.cars);
         }
 
         // **Optimized Despawn Logic: Instead of filtering, recycle cars into the pool**

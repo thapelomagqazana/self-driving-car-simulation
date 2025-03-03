@@ -1,5 +1,6 @@
 import Road from "./Road";
 import Sensor from "./Sensor";
+import NeuralNetwork from "./NeuralNetwork";
 
 export default class Car {
     x: number;
@@ -26,6 +27,9 @@ export default class Car {
     collisionFlashCounter: number; // Counter for flashing effect
     collisionData: { x: number; y: number; speed: number; sensorReadings: number[]; time: number }[];
     color: string; // New property
+    neuralNetwork: NeuralNetwork;
+    trainingData: { inputs: number[], outputs: number[] }[] = [];
+
   
     constructor(x: number, y: number, road: Road, isAIControlled: boolean = false) {
       this.x = x;
@@ -52,6 +56,14 @@ export default class Car {
       this.collisionFlashCounter = 0;
       this.collisionData = []; // Stores crash data for neural network training
       this.color = "#00ADB5"; // Default color
+      this.neuralNetwork = new NeuralNetwork(this.sensor.rayCount);
+
+      // Auto-load model if exists
+      NeuralNetwork.loadModel().then(model => {
+        this.neuralNetwork = model;
+      }).catch(() => {
+        console.log("No saved model found, starting fresh.");
+      });
     }
   
     /**
@@ -85,7 +97,23 @@ export default class Car {
     /**
      * AI Evasive Maneuvers Based on Sensor Readings (Adaptive)
      */
-    public makeAIDecision(traffic: Car[]) {
+    async makeAIDecision() {
+      const inputs = this.sensor.smoothReadings.map(val => Math.max(0, Math.min(1, val)));
+      const outputs = await this.neuralNetwork.predict(inputs);
+      const [steering, acceleration, braking] = outputs[0];
+
+      this.controls.left = steering < -0.3;
+      this.controls.right = steering > 0.3;
+      this.controls.forward = acceleration > 0.3;
+      this.controls.brake = braking > 0.5;
+    }
+
+    /**
+     * Basic AI logic for non-player cars
+     * @param traffic 
+     * @returns 
+     */
+    public makeAIDecisionforNonPlayerCars(traffic: Car[]) {
       const inputs = this.sensor.smoothReadings;
 
       if (inputs.length === 0) return;
@@ -137,18 +165,34 @@ export default class Car {
       return availableLanes;
     }
 
+    
+
   
     /**
      * Updates the car's movement based on mode (manual or AI).
      */
     update(traffic: Car[], staticObstacles: { x: number; y: number; width: number; height: number }[]) {
       if (this.isAIControlled) {
-        this.makeAIDecision(traffic);
+        this.makeAIDecision();
       }
 
       if (this.collided) {
         this.collisionFlashCounter++;
         return;
+      }
+
+      /**
+       * Record training data during manual control:
+       */
+      if (!this.isAIControlled && !this.collided) {
+        this.trainingData.push({
+          inputs: [...this.sensor.smoothReadings],
+          outputs: [
+            this.controls.left ? -1 : this.controls.right ? 1 : 0,
+            this.controls.forward ? 1 : 0,
+            this.controls.brake ? 1 : 0
+          ]
+        });
       }
 
       this.applyAcceleration();
@@ -190,6 +234,38 @@ export default class Car {
       });
 
       console.table(this.collisionData); // Log crash data
+    }
+
+    /**
+     * Train from recorded data:
+     */
+    async trainFromRecordedData() {
+      const inputs = this.trainingData.map(d => d.inputs);
+      const outputs = this.trainingData.map(d => d.outputs);
+      await this.neuralNetwork.train(inputs, outputs);
+    }
+
+    /**
+     * Save trained model:
+     */
+    async saveModel() {
+      await this.neuralNetwork.saveModel();
+    }
+
+    /**
+     * Export training data as JSON:
+     */
+    exportTrainingData() {
+      const dataStr = JSON.stringify(this.trainingData);
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "training-data.json";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
 
     /**
